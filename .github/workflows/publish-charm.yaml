@@ -2,10 +2,9 @@ name: publish-charm
 
 on:
   workflow_call:
-    inputs:
-      charmcraft-token:
+    secrets:
+      CHARMCRAFT_AUTH:
         required: true
-        type: string
 
 jobs:
   publish-charm:
@@ -26,5 +25,5 @@ jobs:
         id: channel
       - name: Upload charm to Charmhub
         env:
-          CHARMCRAFT_AUTH: ${{ inputs.charmcraft-token }}
+          CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
         run: charmcraft upload ./self-signed-certificates_ubuntu-22.04-amd64.charm --release ${{ steps.channel.outputs.name }}
