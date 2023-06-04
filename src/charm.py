@@ -51,8 +51,8 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _config_ca_common_name(self) -> Optional[str]:
         """Returns the user provided common name.
 
-        This common name should only be used when the
-        'generate-self-signed-certificates' config is set to True.
+         This common name should only be used when the 'generate-self-signed-certificates' config
+         is set to True.
 
         Returns:
             str: Common name
@@ -75,8 +75,8 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _generate_root_certificate(self) -> None:
         """Generates root certificate to be used to sign certificates.
 
-        If the secretis already created, we simply update its content, else we
-        create a new secret.
+        If the secret is already created, we simply update its content, else we create a
+        new secret.
         """
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
