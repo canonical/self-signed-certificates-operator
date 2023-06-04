@@ -51,8 +51,8 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _config_ca_common_name(self) -> Optional[str]:
         """Returns the user provided common name.
 
-         This common name should only be used when the 'generate-self-signed-certificates' config
-         is set to True.
+        This common name should only be used when the
+        'generate-self-signed-certificates' config is set to True.
 
         Returns:
             str: Common name
@@ -73,7 +73,11 @@ class SelfSignedCertificatesCharm(CharmBase):
             return False
 
     def _generate_root_certificate(self) -> None:
-        """Generates root certificate to be used to sign certificates."""
+        """Generates root certificate to be used to sign certificates.
+
+        If the secretis already created, we simply update its content, else we
+        create a new secret.
+        """
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
         private_key_password = generate_password()
@@ -83,14 +87,19 @@ class SelfSignedCertificatesCharm(CharmBase):
             subject=self._config_ca_common_name,
             private_key_password=private_key_password.encode(),
         )
-        self.app.add_secret(
-            content={
-                "private-key-password": private_key_password,
-                "private-key": private_key.decode(),
-                "ca-certificate": ca_certificate.decode(),
-            },
-            label=CA_CERTIFICATES_SECRET_LABEL,
-        )
+        secret_content = {
+            "private-key-password": private_key_password,
+            "private-key": private_key.decode(),
+            "ca-certificate": ca_certificate.decode(),
+        }
+        if self._root_certificate_is_stored:
+            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+            secret.set_content(content=secret_content)
+        else:
+            self.app.add_secret(
+                content=secret_content,
+                label=CA_CERTIFICATES_SECRET_LABEL,
+            )
         logger.info("Root certificates generated and stored.")
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:

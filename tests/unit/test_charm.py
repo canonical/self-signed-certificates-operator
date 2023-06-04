@@ -169,3 +169,44 @@ class TestCharm(unittest.TestCase):
             relation_id=relation_id,
             certificate_signing_request=certificate_signing_request,
         )
+
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_password")
+    @patch("charm.generate_ca")
+    def test_given_when_then(
+        self,
+        patch_generate_ca,
+        patch_generate_password,
+        patch_generate_private_key,
+    ):
+        initial_common_name = "common-name-initial.com"
+        new_common_name = "common-name-new.com"
+        ca_certificate_1_string = "whatever CA certificate 1"
+        ca_certificate_2_string = "whatever CA certificate 2"
+        private_key_string_1 = "whatever private key 1"
+        private_key_string_2 = "whatever private key 2"
+        private_key_password_1 = "banana"
+        private_key_password_2 = "apple"
+        ca_certificate_bytes_1 = ca_certificate_1_string.encode()
+        ca_certificate_bytes_2 = ca_certificate_2_string.encode()
+        private_key_bytes_1 = private_key_string_1.encode()
+        private_key_bytes_2 = private_key_string_2.encode()
+        patch_generate_ca.side_effect = [ca_certificate_bytes_1, ca_certificate_bytes_2]
+        patch_generate_password.side_effect = [private_key_password_1, private_key_password_2]
+        patch_generate_private_key.side_effect = [private_key_bytes_1, private_key_bytes_2]
+        self.harness.set_leader(is_leader=True)
+        self.harness.update_config(key_values={"ca-common-name": initial_common_name})
+        self.harness.update_config(key_values={"ca-common-name": new_common_name})
+        ca_certificates_secret = self.harness._backend.secret_get(label="ca-certificates")
+        self.assertEqual(
+            ca_certificates_secret["ca-certificate"],
+            ca_certificate_2_string,
+        )
+        self.assertEqual(
+            ca_certificates_secret["private-key-password"],
+            private_key_password_2,
+        )
+        self.assertEqual(
+            ca_certificates_secret["private-key"],
+            private_key_string_2,
+        )
