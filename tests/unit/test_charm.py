@@ -173,7 +173,7 @@ class TestCharm(unittest.TestCase):
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
-    def test_given_when_then(
+    def test_given_initial_config_when_config_changed_then_stored_ca_common_name_uses_new_config(
         self,
         patch_generate_ca,
         patch_generate_password,
@@ -196,7 +196,9 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key.side_effect = [private_key_bytes_1, private_key_bytes_2]
         self.harness.set_leader(is_leader=True)
         self.harness.update_config(key_values={"ca-common-name": initial_common_name})
+
         self.harness.update_config(key_values={"ca-common-name": new_common_name})
+
         ca_certificates_secret = self.harness._backend.secret_get(label="ca-certificates")
         self.assertEqual(
             ca_certificates_secret["ca-certificate"],
