@@ -4,6 +4,7 @@
 
 """Self Signed X.509 Certificates."""
 
+import json
 import logging
 import secrets
 from typing import Optional
@@ -44,15 +45,18 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
         """Outputs issued certificates by using a Juju action.
-        
+
         Returns:
             event (ActionEvent): Juju event.
         """
-        relations_data = []
+        relations_data = {}
         for relation in self.model.relations.get("certificates", []):
-            if data := relation.data.get(self.app):
-                relations_data.append(data)
-        msg = str(relations_data)
+            # Avoid app name conflicts across models/controllers we use the relation id.
+            if app := relation.app:
+                key = f"{app.name}-{relation.id}"
+                if data := relation.data.get(self.app):
+                    relations_data[key] = dict(data)
+        msg = json.dumps(relations_data)
         event.set_results({"result": msg})
 
     @property
