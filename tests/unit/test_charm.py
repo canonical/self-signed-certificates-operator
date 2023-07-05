@@ -121,6 +121,48 @@ class TestCharm(unittest.TestCase):
             ),
         )
 
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_password")
+    @patch("charm.generate_ca")
+    def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_password,
+        patch_generate_private_key,
+    ):
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        private_key_password = "banana"
+        ca_certificate_bytes = ca_certificate_string.encode()
+        private_key_bytes = private_key_string.encode()
+        patch_generate_ca.return_value = ca_certificate_bytes
+        patch_generate_password.return_value = private_key_password
+        patch_generate_private_key.return_value = private_key_bytes
+        self.harness.set_leader(is_leader=True)
+
+        mock_secret_id = self.harness.add_model_secret(
+            owner=self.harness.model.app.name,
+            content={"secret": "whatever"},
+        )
+        revision = self.harness.get_secret_revisions(mock_secret_id)[0]
+
+        self.harness.trigger_secret_expiration(secret_id=mock_secret_id, revision=revision)
+
+        ca_certificates_secret = self.harness._backend.secret_get(label="ca-certificates")
+
+        self.assertEqual(
+            ca_certificates_secret["ca-certificate"],
+            ca_certificate_string,
+        )
+        self.assertEqual(
+            ca_certificates_secret["private-key-password"],
+            private_key_password,
+        )
+        self.assertEqual(
+            ca_certificates_secret["private-key"],
+            private_key_string,
+        )
+
     def test_given_root_certificate_not_yet_generated_when_certificate_request_then_status_is_waiting(  # noqa: E501
         self,
     ):
