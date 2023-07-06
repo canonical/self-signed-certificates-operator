@@ -7,7 +7,7 @@
 import datetime
 import logging
 import secrets
-from typing import Optional, Union
+from typing import Optional
 
 from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ignore[import]
     CertificateCreationRequestEvent,
@@ -16,7 +16,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
-from ops.charm import CharmBase, ConfigChangedEvent, SecretExpiredEvent
+from ops.charm import CharmBase, EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
 
@@ -115,13 +115,13 @@ class SelfSignedCertificatesCharm(CharmBase):
             )
         logger.info("Root certificates generated and stored.")
 
-    def _configure_ca(self, event: Union[ConfigChangedEvent, SecretExpiredEvent]) -> None:
+    def _configure_ca(self, event: EventBase) -> None:
         """Validates configuration and generates root certificate.
 
         It will revoke the certificates signed by the previous root certificate.
 
         Args:
-            event: Union[ConfigChangedEvent, SecretExpiredEvent]
+            event (EventBase): Juju event
         """
         if not self.unit.is_leader():
             return
@@ -154,7 +154,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Handler for certificate requests.
 
         Args:
-            event: CertificateCreationRequestEvent
+            event (CertificateCreationRequestEvent): Jujue event
         """
         if not self.unit.is_leader():
             return
