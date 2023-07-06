@@ -1,0 +1,16 @@
+name: Check libraries
+
+on:
+  workflow_call:
+    secrets:
+      CHARMCRAFT_AUTH:
+        required: true
+
+jobs:
+  check-libraries:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: canonical/charming-actions/check-libraries@2.3.0
+        with:
+          credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
