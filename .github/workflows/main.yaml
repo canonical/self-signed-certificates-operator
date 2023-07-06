@@ -1,7 +1,9 @@
-name: Push
+name: Main
 
 on:
   push:
+  schedule:
+    - cron: '0 0 * * 0'
 
 jobs:
   lint-report:
