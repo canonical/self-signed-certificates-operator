@@ -4,6 +4,7 @@
 
 """Self Signed X.509 Certificates."""
 
+import json
 import logging
 import secrets
 from typing import Optional
@@ -15,7 +16,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
-from ops.charm import CharmBase, ConfigChangedEvent
+from ops.charm import ActionEvent, CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
 
@@ -37,6 +38,26 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.tls_certificates.on.certificate_creation_request,
             self._on_certificate_creation_request,
         )
+
+        self.framework.observe(
+            self.on.get_issued_certificates_action, self._on_get_issued_certificates
+        )
+
+    def _on_get_issued_certificates(self, event: ActionEvent) -> None:
+        """Outputs issued certificates by using a Juju action.
+
+        Returns:
+            event (ActionEvent): Juju event.
+        """
+        relations_data = {}
+        for relation in self.model.relations.get("certificates", []):
+            # Avoid app name conflicts across models/controllers we use the relation id.
+            if app := relation.app:
+                key = f"{app.name}-{relation.id}"
+                if data := relation.data.get(self.app):
+                    relations_data[key] = dict(data)
+        msg = json.dumps(relations_data)
+        event.set_results({"result": msg})
 
     @property
     def _config_certificate_validity(self) -> int:
