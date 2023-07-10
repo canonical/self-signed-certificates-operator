@@ -15,7 +15,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
-from ops.charm import CharmBase, ConfigChangedEvent, ActionEvent
+from ops.charm import ActionEvent, CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
 

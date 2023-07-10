@@ -23,3 +23,8 @@ juju deploy self-signed-certificates
 juju deploy <your charm>
 juju relate self-signed-certificates <your charm>
 ```
+
+## Get the certificates issued by the charm
+```bash
+juju run self-signed-certificates/leader get-issued-certificates
+```

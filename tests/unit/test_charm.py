@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 import unittest
 from unittest.mock import Mock, patch
 
@@ -223,16 +222,14 @@ class TestCharm(unittest.TestCase):
 
         action_event.fail.assert_called_with("No certificates issued yet.")
 
-    def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(
+    def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
         self,
     ):
         self.harness.set_leader(is_leader=True)
         relation_id = self.harness.add_relation(
             relation_name="certificates", remote_app="tls-requirer"
         )
-        self.harness.add_relation_unit(
-            relation_id=relation_id, remote_unit_name="tls-requirer/0"
-        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="tls-requirer/0")
 
         self.harness.charm.tls_certificates.set_relation_certificate(
             certificate_signing_request="whatever csr",

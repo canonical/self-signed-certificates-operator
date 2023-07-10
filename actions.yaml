@@ -1,0 +1,2 @@
+get-issued-certificates:
+  description: Outputs the certificates issued by the charm.
