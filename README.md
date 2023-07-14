@@ -23,3 +23,9 @@ juju deploy self-signed-certificates
 juju deploy <your charm>
 juju relate self-signed-certificates <your charm>
 ```
+
+To get the CA certificate run:
+
+```console
+juju run self-signed-certificates/0 get-ca-cert
+```

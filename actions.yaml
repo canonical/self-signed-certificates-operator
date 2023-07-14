@@ -1,0 +1,2 @@
+get-ca-cert:
+  description: Print the CA cert.

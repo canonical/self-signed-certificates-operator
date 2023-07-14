@@ -172,7 +172,7 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(
             self.harness.model.unit.status,
-            WaitingStatus("Root Certificates is not yet generated"),
+            WaitingStatus("Root Certificate is not yet generated"),
         )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")
