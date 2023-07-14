@@ -4,6 +4,7 @@
 
 """Self Signed X.509 Certificates."""
 
+import datetime
 import logging
 import secrets
 from typing import Optional
@@ -15,7 +16,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
-from ops.charm import ActionEvent, CharmBase, ConfigChangedEvent
+from ops.charm import ActionEvent, CharmBase, EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
 
@@ -32,11 +33,21 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Observes config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV2(self, "certificates")
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.config_changed, self._configure_ca)
         self.framework.observe(
             self.tls_certificates.on.certificate_creation_request,
             self._on_certificate_creation_request,
         )
+        self.framework.observe(self.on.secret_expired, self._configure_ca)
+
+    @property
+    def _config_root_ca_certificate_validity(self) -> int:
+        """Returns Root CA certificate validity (in days).
+
+        Returns:
+            int: Certificate validity (in days)
+        """
+        return int(self.model.config.get("root-ca-validity"))  # type: ignore[arg-type]
 
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
@@ -66,7 +77,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             int: Certificate validity (in days)
         """
-        return int(self.model.config.get("certificate-validity", 365))
+        return int(self.model.config.get("certificate-validity"))  # type: ignore[arg-type]
 
     @property
     def _config_ca_common_name(self) -> Optional[str]:
@@ -96,6 +107,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _generate_root_certificate(self) -> None:
         """Generates root certificate to be used to sign certificates.
 
+        Stores the root certificate in a juju secret.
         If the secret is already created, we simply update its content, else we create a
         new secret.
         """
@@ -120,14 +132,17 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
+                expire=datetime.timedelta(days=self._config_certificate_validity),
             )
         logger.info("Root certificates generated and stored.")
 
-    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
-        """Triggered when the Juju config is changed.
+    def _configure_ca(self, event: EventBase) -> None:
+        """Validates configuration and generates root certificate.
+
+        It will revoke the certificates signed by the previous root certificate.
 
         Args:
-            event (ConfigChangedEvent): Juju event.
+            event (EventBase): Juju event
         """
         if not self.unit.is_leader():
             return
@@ -150,6 +165,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         invalid_configs = []
         if not self._config_ca_common_name:
             invalid_configs.append("ca-common-name")
+        if not self._config_root_ca_certificate_validity:
+            invalid_configs.append("root-ca-validity")
         if not self._config_certificate_validity:
             invalid_configs.append("certificate-validity")
         return invalid_configs
@@ -158,7 +175,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Handler for certificate requests.
 
         Args:
-            event: CertificateCreationRequestEvent
+            event (CertificateCreationRequestEvent): Jujue event
         """
         if not self.unit.is_leader():
             return
