@@ -18,3 +18,5 @@ parts:
       - rustc
       - cargo
       - pkg-config
+    charm-binary-python-packages:
+      - pyyaml
