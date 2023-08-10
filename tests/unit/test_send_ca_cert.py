@@ -20,9 +20,11 @@ class TestSendCaCert(unittest.TestCase):
         self.rel_id = self.harness.add_relation(relation_name="send-ca-cert", remote_app="traefik")
         self.harness.add_relation_unit(relation_id=self.rel_id, remote_unit_name="traefik/0")
         data = self.harness.get_relation_data(self.rel_id, self.harness.charm.unit)
+        ca_from_rel_data = data["ca"]
 
-        ca = self.harness.charm.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL).get_content()[
-            "ca-certificate"
-        ]
+        secret = self.harness.charm.model.get_secret(
+            label=CA_CERTIFICATES_SECRET_LABEL
+        ).get_content()
+        ca_from_secret = secret["ca-certificate"]
 
-        self.assertEqual(ca, data["ca"])
+        self.assertEqual(ca_from_secret, ca_from_rel_data)
