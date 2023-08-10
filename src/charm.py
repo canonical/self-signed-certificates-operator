@@ -214,7 +214,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         logger.info(f"Generated certificate for relation {event.relation_id}")
 
     def _on_send_ca_cert_relation_joined(self, event: RelationJoinedEvent):
-        # TODO modify func to also work with deltas (take an event arg)
         self._send_ca_cert(rel_id=event.relation.id)
 
     def _send_ca_cert(self, *, rel_id=None):

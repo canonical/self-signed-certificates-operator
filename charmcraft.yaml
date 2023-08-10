@@ -12,9 +12,14 @@ bases:
 
 parts:
   charm:
-    build-packages:
-      - libffi-dev
-      - libssl-dev
-      - rustc
-      - cargo
-      - pkg-config
+    charm-binary-python-packages:
+      # This is a dev tool, so there is no issue with using binary packages in favor of build time
+      - cryptography
+      - jsonschema
+      - ops >= 2.2.0
+#    build-packages:
+#      - libffi-dev
+#      - libssl-dev
+#      - rustc
+#      - cargo
+#      - pkg-config
