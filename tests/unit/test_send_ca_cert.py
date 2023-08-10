@@ -16,10 +16,12 @@ class TestSendCaCert(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         self.harness.begin_with_initial_hooks()
 
-    def test_when_relations_joins_then_ca_cert_is_advertised(self):
+    def test_when_relation_join_then_ca_cert_is_advertised(self):
         # Add a few apps
         apps = ["traefik", "another"]
-        rel_ids = [self.harness.add_relation(relation_name="send-ca-cert", remote_app=app) for app in apps]
+        rel_ids = [
+            self.harness.add_relation(relation_name="send-ca-cert", remote_app=app) for app in apps
+        ]
         for app, rel_id in zip(apps, rel_ids):
             self.harness.add_relation_unit(relation_id=rel_id, remote_unit_name=f"{app}/0")
 
