@@ -16,15 +16,21 @@ class TestSendCaCert(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         self.harness.begin_with_initial_hooks()
 
-    def test_when_relation_joins_then_ca_cert_is_advertised(self):
-        self.rel_id = self.harness.add_relation(relation_name="send-ca-cert", remote_app="traefik")
-        self.harness.add_relation_unit(relation_id=self.rel_id, remote_unit_name="traefik/0")
-        data = self.harness.get_relation_data(self.rel_id, self.harness.charm.unit)
-        ca_from_rel_data = data["ca"]
+    def test_when_relations_joins_then_ca_cert_is_advertised(self):
+        # Add a few apps
+        apps = ["traefik", "another"]
+        rel_ids = [self.harness.add_relation(relation_name="send-ca-cert", remote_app=app) for app in apps]
+        for app, rel_id in zip(apps, rel_ids):
+            self.harness.add_relation_unit(relation_id=rel_id, remote_unit_name=f"{app}/0")
 
+        # Now make sure all the apps have the same ca
         secret = self.harness.charm.model.get_secret(
             label=CA_CERTIFICATES_SECRET_LABEL
         ).get_content()
         ca_from_secret = secret["ca-certificate"]
 
-        self.assertEqual(ca_from_secret, ca_from_rel_data)
+        for rel_id in rel_ids:
+            with self.subTest(rel_id=rel_id):
+                data = self.harness.get_relation_data(rel_id, self.harness.charm.unit)
+                ca_from_rel_data = data["ca"]
+                self.assertEqual(ca_from_secret, ca_from_rel_data)
