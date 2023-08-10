@@ -10,11 +10,11 @@ summary: An operator to provide self-signed X.509 certificates to your charms.
 description: |
   An operator to provide self-signed X.509 certificates to your charms.
 
-  This charm relies on the `tls-certificates` charm relation interface. When a requirer charm 
-  inserts a Certificate Signing Request in its unit databag, the 
+  This charm relies on the `tls-certificates` charm relation interface. When a requirer charm
+  inserts a Certificate Signing Request in its unit databag, the
   `self-signed-certificates-operator` will read it, generate a self-signed X.509 certificates and
   inserts this certificate back into the relation data.
-  
+
   This charm is useful when developing charms or when deploying charms in non-production environment.
 
 website: https://charmhub.io/self-signed-certificates
@@ -24,6 +24,11 @@ issues: https://github.com/canonical/self-signed-certificates-operator/issues
 provides:
   certificates:
     interface: tls-certificates
+  send-ca-cert:
+    interface: mutual_tls
+    description: |
+      Send our CA certificate so clients can trust the CA by means of forming a relation.
+      Note: The interface name is a misnomer, as this is not in fact mTLS.
 
 assumes:
   - juju >= 3.1

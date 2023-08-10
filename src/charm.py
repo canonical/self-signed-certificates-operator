@@ -9,6 +9,7 @@ import logging
 import secrets
 from typing import Optional
 
+from charms.mutual_tls_interface.v0.mutual_tls import MutualTLSProvides
 from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ignore[import]
     CertificateCreationRequestEvent,
     TLSCertificatesProvidesV2,
@@ -16,7 +17,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
-from ops.charm import ActionEvent, CharmBase, EventBase
+from ops.charm import ActionEvent, CharmBase, EventBase, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
+SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
 
 class SelfSignedCertificatesCharm(CharmBase):
@@ -39,6 +41,13 @@ class SelfSignedCertificatesCharm(CharmBase):
             self._on_certificate_creation_request,
         )
         self.framework.observe(self.on.secret_expired, self._configure_ca)
+        self.framework.observe(
+            self.on.get_issued_certificates_action, self._on_get_issued_certificates
+        )
+        self.framework.observe(
+            self.on.send_ca_cert_relation_joined,  # pyright: ignore
+            self._on_send_ca_cert_relation_joined,
+        )
 
     @property
     def _config_root_ca_certificate_validity(self) -> int:
@@ -48,10 +57,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             int: Certificate validity (in days)
         """
         return int(self.model.config.get("root-ca-validity"))  # type: ignore[arg-type]
-
-        self.framework.observe(
-            self.on.get_issued_certificates_action, self._on_get_issued_certificates
-        )
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
         """Handler for the get-issued-certificates action.
@@ -154,6 +159,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         self._generate_root_certificate()
         self.tls_certificates.revoke_all_certificates()
         logger.info("Revoked all previously issued certificates.")
+        self._send_ca_cert()
         self.unit.status = ActiveStatus()
 
     def _invalid_configs(self) -> list[str]:
@@ -206,6 +212,30 @@ class SelfSignedCertificatesCharm(CharmBase):
             relation_id=event.relation_id,
         )
         logger.info(f"Generated certificate for relation {event.relation_id}")
+
+    def _on_send_ca_cert_relation_joined(self, event: RelationJoinedEvent):
+        # TODO modify func to also work with deltas (take an event arg)
+        self._send_ca_cert(rel_id=event.relation.id)
+
+    def _send_ca_cert(self, *, rel_id=None):
+        """There is one (and only one) CA cert that we need to forward to multiple apps.
+
+        Args:
+            rel_id: Relation id. If not given, update all relations.
+        """
+        send_ca_cert = MutualTLSProvides(self, SEND_CA_CERT_REL_NAME)
+        if self._root_certificate_is_stored:
+            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+            secret_content = secret.get_content()
+            ca = secret_content["ca-certificate"]
+            if rel_id:
+                send_ca_cert.set_certificate("", ca, [], relation_id=rel_id)
+            else:
+                for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
+                    send_ca_cert.set_certificate("", ca, [], relation_id=relation.id)
+        else:
+            for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
+                send_ca_cert.remove_certificate(relation.id)
 
 
 def generate_password() -> str:
