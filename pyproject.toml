@@ -37,7 +37,7 @@ pretty = true
 python_version = "3.10"
 mypy_path = "$MYPY_CONFIG_FILE_DIR/lib"
 
-# Ignore libraries that do not have type hint nor stubs
+# Ignore 3rd party libraries that have typing issues
 [[tool.mypy.overrides]]
 module = ["charms.tls_certificates_interface.*"]
 follow_imports = "silent"

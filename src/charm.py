@@ -45,7 +45,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
         )
         self.framework.observe(
-            self.on.send_ca_cert_relation_joined,  # pyright: ignore
+            self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._on_send_ca_cert_relation_joined,
         )
 
