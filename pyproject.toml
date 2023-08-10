@@ -30,3 +30,14 @@ ignore = ["D107"]
 # D100, D101, D102, D103: Ignore missing docstrings in tests
 per-file-ignores = ["tests/*:D100,D101,D102,D103,D104"]
 docstring-convention = "google"
+
+# Static analysis tools configuration
+[tool.mypy]
+pretty = true
+python_version = "3.10"
+mypy_path = "$MYPY_CONFIG_FILE_DIR/lib"
+
+# Ignore libraries that do not have type hint nor stubs
+[[tool.mypy.overrides]]
+module = ["charms.tls_certificates_interface.*"]
+follow_imports = "silent"
