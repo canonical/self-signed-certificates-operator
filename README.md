@@ -2,8 +2,8 @@
 
 An operator to provide self-signed X.509 certificates to your charms.
 
-This charm relies on the `tls-certificates` charm relation interface. When a requirer charm 
-inserts a Certificate Signing Request in its unit databag, the 
+This charm relies on the `tls-certificates` charm relation interface. When a requirer charm
+inserts a Certificate Signing Request in its unit databag, the
 `self-signed-certificates-operator` will read it, generate a self-signed X.509 certificates and
 inserts this certificate back into the relation data.
 
@@ -22,6 +22,12 @@ needs to support the `tls-certificates` interface.
 juju deploy self-signed-certificates
 juju deploy <your charm>
 juju relate self-signed-certificates <your charm>
+```
+
+To obtain the CA cert fom this charm, your charm needs to support the `mutual_tls` interface.
+
+```console
+juju relate self-signed-certificates:send-ca-cert <your charm>
 ```
 
 ## Get the certificates issued by the charm
