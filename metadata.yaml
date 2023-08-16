@@ -16,7 +16,7 @@ description: |
   inserts this certificate back into the relation data.
   
   This charm is useful when developing charms or when deploying charms in non-production environment.
-
+docs: https://discourse.charmhub.io/t/self-signed-x-509-certificates-documentation/11591
 website: https://charmhub.io/self-signed-certificates
 source: https://github.com/canonical/self-signed-certificates-operator
 issues: https://github.com/canonical/self-signed-certificates-operator/issues
