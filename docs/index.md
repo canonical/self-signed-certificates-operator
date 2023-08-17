@@ -8,7 +8,7 @@ This charm [Self-Signed-Certificates-Operator](https://github.com/canonical/self
 ## Project and community
 The Self Signed Certificates Operator is an open-source project that welcomes community contributions, suggestions, fixes and constructive feedback.
 - [Read our Code of Conduct](https://ubuntu.com/community/code-of-conduct)
-- - [Join the Discourse forum](https://discourse.charmhub.io/tag/self-signed-certificates)
+- [Join the Discourse forum](https://discourse.charmhub.io/tag/self-signed-certificates)
 - Contribute and report bugs to [Self-Signed-Certificates-Operator](https://github.com/canonical/self-signed-certificates-operator)
 
 ## In this documentation
