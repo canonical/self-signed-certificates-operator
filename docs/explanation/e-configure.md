@@ -1,4 +1,4 @@
-# Set the operator configuration options
+# Set the Self Signed Certificates Operator configuration options
 
 The following charm configuration options are set to desired values if needed.
 
@@ -21,7 +21,7 @@ The updated charm configuration is displayed by running following command:
 juju config self-signed-certificates
 ```
 
-The command output is similar to following:
+The command output is similar to below content:
 
 ```yaml
 charm: self-signed-certificates

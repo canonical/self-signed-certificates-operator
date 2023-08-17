@@ -19,7 +19,6 @@ Bootstrap a Kubernetes (e.g. [Multipass-based MicroK8s](https://discourse.charmh
 
 ```shell
 juju add-model certificates
-juju deploy self-signed-certificates
 juju deploy self-signed-certificates --channel edge
 ```
 
