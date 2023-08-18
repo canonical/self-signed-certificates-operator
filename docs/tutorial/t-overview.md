@@ -73,12 +73,11 @@ self-signed-certificates:certificates  amf:certificates                     tls-
 ## Step-by-step guide
 
 Here’s an overview of the steps required with links to our separate tutorials that deal with each individual step:
-* [Set up the environment](/t/self-signed-x-509-certificates-tutorial-setup-environment/11599?channel=edge)
 * [Deploy Self Signed Certificates Operator](/t/self-signed-x-509-certificates-tutorial-overview/11600?channel=edge)
 * [Configure Self Signed Certificates Operator](https://charmhub.io/self-signed-certificates/configure?channel=edge)
 * [Managing your units](/t/self-signed-x-509-certificates-tutorial-overview/11600?channel=edge)
-* [Relate Self Signed Certificates Operator with other applications](/t/self-signed-x-509-certificates-tutorial-overview/11600?channel=edge)
-* [Get Signed Certificates](/t/self-signed-x-509-certificates-tutorial-get-signed-certificates/11598?channel=edge)
+* [Relate Self Signed Certificates Operator with other applications](https://charmhub.io/self-signed-certificates/integrations?channel=edge)
+* [Get Signed Certificates](https://charmhub.io/self-signed-certificates/actions?channel=edge)
 
 # License:
 The Self Signed X.509 Certificates Operator [is distributed](https://github.com/canonical/self-signed-certificates-operator/blob/main/LICENSE) under the Apache Software License, version 2.0.

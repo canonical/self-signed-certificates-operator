@@ -23,9 +23,8 @@ The Self Signed Certificates Operator is an open-source project that welcomes co
 | ----- |---------------------------|----------------------------------------------------------------------------------------------------------|
 | 1 | tutorial                  | [Tutorial]()                                                                                             |
 | 2 | t-overview                | [1. Introduction](/t/self-signed-x-509-certificates-tutorial-overview/11600)                             |
-| 2 | t-setup-environment       | [2. Set up the environment](/t/self-signed-x-509-certificates-tutorial-setup-environment/11599)          |
 | 2 | t-deploy                  | [3. Deploy Self Signed Certificates Operator](/t/self-signed-x-509-certificates-tutorial-overview/11600) |
-| 2 | t-get-signed-certificates | [4. Get Signed Certificates](/t/self-signed-x-509-certificates-tutorial-get-signed-certificates/11598)   |
+| 2 | t-get-signed-certificates | [4. Get Signed Certificates](https://charmhub.io/self-signed-certificates/actions?channel=edge)          |
 | 1 | how-to                    | [How To]()                                                                                               |
 | 1 | reference                 | [Reference]()                                                                                            |
 | 2 | r-actions                 | [Actions](https://charmhub.io/self-signed-certificates/actions?channel=edge)                             |
@@ -34,10 +33,3 @@ The Self Signed Certificates Operator is an open-source project that welcomes co
 | 2 | r-integrations            | [Integrations](https://charmhub.io/self-signed-certificates/integrations?channel=edge)                   |
 | 1 | explanation               | [Explanation]()                                                                                          |
 
-
-# Redirects
-
-[details=Mapping table]
-| Path | Location |
-| ---- | -------- |
-[/details]
