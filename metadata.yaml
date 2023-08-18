@@ -25,10 +25,9 @@ provides:
   certificates:
     interface: tls-certificates
   send-ca-cert:
-    interface: mutual_tls
+    interface: certificate_transfer
     description: |
       Send our CA certificate so clients can trust the CA by means of forming a relation.
-      Note: The interface name is a misnomer, as this is not in fact mTLS.
 
 assumes:
   - juju >= 3.1

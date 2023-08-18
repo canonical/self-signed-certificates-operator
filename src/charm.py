@@ -9,7 +9,9 @@ import logging
 import secrets
 from typing import Optional
 
-from charms.mutual_tls_interface.v0.mutual_tls import MutualTLSProvides
+from charms.certificate_transfer_interface.v0.certificate_transfer import (
+    CertificateTransferProvides,
+)
 from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ignore[import]
     CertificateCreationRequestEvent,
     TLSCertificatesProvidesV2,
@@ -222,7 +224,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         Args:
             rel_id: Relation id. If not given, update all relations.
         """
-        send_ca_cert = MutualTLSProvides(self, SEND_CA_CERT_REL_NAME)
+        send_ca_cert = CertificateTransferProvides(self, SEND_CA_CERT_REL_NAME)
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret_content = secret.get_content()
