@@ -7,8 +7,7 @@ The [Self-Signed-Certificates-Operator](https://github.com/canonical/self-signed
 
 ## Usage
 
-To deploy Self Signed X.509 Certificates Operator, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/self-signed-certificates?channel=edge) and deploy it to your model and relate it with an existing requirer charm:
-
+To deploy Self Signed X.509 Certificates Operator, all you need to do is run the following command, which will fetch the charm from [Charmhub](https://charmhub.io/self-signed-certificates?channel=edge) and deploy it to your model. Then relate it with an existing requirer charm.
 ```shell
 juju deploy self-signed-certificates --channel edge
 juju relate self-signed-certificates <your charm which needs tls certificates>
