@@ -24,7 +24,8 @@ juju deploy <your charm>
 juju relate self-signed-certificates <your charm>
 ```
 
-To obtain the CA certificate from this charm, your charm needs to support the `mutual_tls` interface.
+To obtain the CA certificate from this charm, your charm needs to support the
+`certificate_transfer` interface.
 
 ```console
 juju relate self-signed-certificates:send-ca-cert <your charm>
