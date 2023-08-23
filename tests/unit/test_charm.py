@@ -287,7 +287,6 @@ class TestCharm(unittest.TestCase):
 
         expected_certificates = {
             "tls-requirer": "CSR: \nwhatever csr\nCERT: \nwhatever cert",
-            
         }
 
         action_event.set_results.assert_called_with(expected_certificates)
