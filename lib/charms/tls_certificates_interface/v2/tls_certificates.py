@@ -1060,7 +1060,9 @@ class TLSCertificatesProvidesV2(Object):
         for certificate_relation in certificates_relation:
             self._remove_certificate(certificate=certificate, relation_id=certificate_relation.id)
 
-    def get_issued_certificates(self, relation_id: Optional[int] = None) -> Dict[str, str]:
+    def get_issued_certificates(
+        self, relation_id: Optional[int] = None
+    ) -> Dict[str, list[Dict[str, str]]]:
         """Returns a dictionary of issued certificates.
 
         It returns certificates from all relations if relation_id is not specified.
@@ -1069,7 +1071,7 @@ class TLSCertificatesProvidesV2(Object):
         Returns:
             dict: Certificates per application name.
         """
-        certificates: Dict[str, list] = defaultdict(list)
+        certificates: Dict[str, list[Dict[str, str]]] = defaultdict(list)
         relations = (
             [self.model.relations[self.relationship_name][relation_id]]
             if relation_id

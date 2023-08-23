@@ -5,8 +5,8 @@
 """Self Signed X.509 Certificates."""
 
 import datetime
-import logging
 import json
+import logging
 import secrets
 from typing import Optional
 
