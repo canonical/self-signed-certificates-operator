@@ -286,9 +286,8 @@ class TestCharm(unittest.TestCase):
         self.harness.charm._on_get_issued_certificates(action_event)
 
         expected_certificates = {
-            "tls-requirer": {
-                "whatever csr": "whatever cert",
-            }
+            "tls-requirer": "CSR: \nwhatever csr\nCERT: \nwhatever cert",
+            
         }
 
-        action_event.set_results.assert_called_with({"issued_certificates": expected_certificates})
+        action_event.set_results.assert_called_with(expected_certificates)
