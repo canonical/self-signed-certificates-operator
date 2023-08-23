@@ -1071,7 +1071,7 @@ class TLSCertificatesProvidesV2(Object):
         Returns:
             dict: Certificates per application name.
         """
-        certificates: Dict[str, Dict[str, str]] = defaultdict(dict)
+        certificates: Dict[str, str] = defaultdict(str)
         relations = (
             [self.model.relations[self.relationship_name][relation_id]]
             if relation_id
@@ -1081,9 +1081,8 @@ class TLSCertificatesProvidesV2(Object):
             provider_relation_data = _load_relation_data(relation.data[self.charm.app])
             provider_certificates = provider_relation_data.get("certificates", [])
             for certificate in provider_certificates:
-                certificates[relation.app.name].update(  # type: ignore[union-attr]
-                    {certificate["certificate_signing_request"]: certificate["certificate"]}
-                )
+                certificates[relation.app.name] = f"CSR: \n{certificate['certificate_signing_request']}\nCERT: \n{certificate['certificate']}"
+
         return certificates
 
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
