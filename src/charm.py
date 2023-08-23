@@ -6,6 +6,7 @@
 
 import datetime
 import logging
+import json
 import secrets
 from typing import Optional
 
@@ -75,7 +76,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not certificates:
             event.fail("No certificates issued yet.")
             return
-        event.set_results(certificates)
+        event.set_results({key: json.dumps(value) for key, value in certificates.items()})
 
     @property
     def _config_certificate_validity(self) -> int:

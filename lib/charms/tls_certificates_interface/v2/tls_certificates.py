@@ -1086,7 +1086,7 @@ class TLSCertificatesProvidesV2(Object):
                     }
                 )
 
-        return {key: json.dumps(value) for key, value in certificates.items()}
+        return certificates
 
     def _on_relation_changed(self, event: RelationChangedEvent) -> None:
         """Handler triggered on relation changed event.
