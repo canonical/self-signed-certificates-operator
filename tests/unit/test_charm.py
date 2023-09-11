@@ -17,11 +17,11 @@ class TestCharm(unittest.TestCase):
     def setUp(self):
         self.harness = ops.testing.Harness(SelfSignedCertificatesCharm)
         self.addCleanup(self.harness.cleanup)
+        self.harness.set_leader(is_leader=True)
         self.harness.begin()
 
     def test_given_invalid_config_when_config_changed_then_status_is_blocked(self):
         key_values = {"ca-common-name": "", "certificate-validity": 100}
-        self.harness.set_leader(is_leader=True)
 
         self.harness.update_config(key_values=key_values)
 

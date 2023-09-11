@@ -308,7 +308,7 @@ LIBAPI = 2
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 12
+LIBPATCH = 13
 
 PYDEPS = ["cryptography", "jsonschema"]
 
@@ -897,6 +897,22 @@ class TLSCertificatesProvidesV2(Object):
         self.charm = charm
         self.relationship_name = relationship_name
 
+    def _load_relation_data(self, raw_relation_data: dict) -> dict:
+        """Loads relation data from the relation data bag.
+
+        Json loads all data.
+
+        Args:
+            raw_relation_data (dict): Relation data from the databag
+
+        Returns:
+            dict: Relation data in dict
+        """
+        # If unit is not leader, it does not try to reach relation data.
+        if not self.model.unit.is_leader():
+            return {}
+        return _load_relation_data(raw_relation_data)
+
     def _add_certificate(
         self,
         relation_id: int,
@@ -931,7 +947,7 @@ class TLSCertificatesProvidesV2(Object):
             "ca": ca,
             "chain": chain,
         }
-        provider_relation_data = _load_relation_data(relation.data[self.charm.app])
+        provider_relation_data = self._load_relation_data(relation.data[self.charm.app])
         provider_certificates = provider_relation_data.get("certificates", [])
         certificates = copy.deepcopy(provider_certificates)
         if new_certificate in certificates:
@@ -964,7 +980,7 @@ class TLSCertificatesProvidesV2(Object):
             raise RuntimeError(
                 f"Relation {self.relationship_name} with relation id {relation_id} does not exist"
             )
-        provider_relation_data = _load_relation_data(relation.data[self.charm.app])
+        provider_relation_data = self._load_relation_data(relation.data[self.charm.app])
         provider_certificates = provider_relation_data.get("certificates", [])
         certificates = copy.deepcopy(provider_certificates)
         for certificate_dict in certificates:
@@ -999,7 +1015,7 @@ class TLSCertificatesProvidesV2(Object):
         This method is meant to be used when the Root CA has changed.
         """
         for relation in self.model.relations[self.relationship_name]:
-            provider_relation_data = _load_relation_data(relation.data[self.charm.app])
+            provider_relation_data = self._load_relation_data(relation.data[self.charm.app])
             provider_certificates = copy.deepcopy(provider_relation_data.get("certificates", []))
             for certificate in provider_certificates:
                 certificate["revoked"] = True
@@ -1081,7 +1097,7 @@ class TLSCertificatesProvidesV2(Object):
             else self.model.relations.get(self.relationship_name, [])
         )
         for relation in relations:
-            provider_relation_data = _load_relation_data(relation.data[self.charm.app])
+            provider_relation_data = self._load_relation_data(relation.data[self.charm.app])
             provider_certificates = provider_relation_data.get("certificates", [])
 
             certificates[relation.app.name] = []  # type: ignore[union-attr]
@@ -1111,9 +1127,10 @@ class TLSCertificatesProvidesV2(Object):
         Returns:
             None
         """
-        assert event.unit is not None
+        if event.unit is None:
+            return
         requirer_relation_data = _load_relation_data(event.relation.data[event.unit])
-        provider_relation_data = _load_relation_data(event.relation.data[self.charm.app])
+        provider_relation_data = self._load_relation_data(event.relation.data[self.charm.app])
         if not self._relation_data_is_valid(requirer_relation_data):
             logger.debug("Relation data did not pass JSON Schema validation")
             return
@@ -1152,7 +1169,9 @@ class TLSCertificatesProvidesV2(Object):
         )
         if not certificates_relation:
             raise RuntimeError(f"Relation {self.relationship_name} does not exist")
-        provider_relation_data = _load_relation_data(certificates_relation.data[self.charm.app])
+        provider_relation_data = self._load_relation_data(
+            certificates_relation.data[self.charm.app]
+        )
         list_of_csrs: List[str] = []
         for unit in certificates_relation.units:
             requirer_relation_data = _load_relation_data(certificates_relation.data[unit])
