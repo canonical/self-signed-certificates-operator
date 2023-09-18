@@ -48,12 +48,10 @@ async def test_given_charm_is_built_when_deployed_then_status_is_active(
     )
 
 
-async def test_given_charm_is_scaled_when_tls_requirer_is_related_then_certificate_is_created_and_passed_correctly(  # noqa: E501
+async def test_given_tls_requirer_is_deployed_and_related_then_certificate_is_created_and_passed_correctly(  # noqa: E501
     ops_test: OpsTest,
     build_and_deploy,
 ):
-    await ops_test.model.applications[APP_NAME].scale(2)
-    await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=2)
     await ops_test.model.add_relation(
         relation1=f"{APP_NAME}:certificates", relation2=f"{TLS_REQUIRER_CHARM_NAME}"
     )
@@ -67,6 +65,16 @@ async def test_given_charm_is_scaled_when_tls_requirer_is_related_then_certifica
     assert action_output["ca-certificate"] is not None
     assert action_output["chain"] is not None
     assert action_output["csr"] is not None
+
+
+async def test_given_charm_scaled_then_charm_does_not_crash(
+    ops_test: OpsTest,
+    build_and_deploy,
+):
+    await ops_test.model.applications[APP_NAME].scale(2)
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=2)
+    await ops_test.model.applications[APP_NAME].scale(1)
+    await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=1)
 
 
 async def run_get_certificate_action(ops_test) -> dict:
