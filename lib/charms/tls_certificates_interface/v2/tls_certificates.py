@@ -308,7 +308,7 @@ LIBAPI = 2
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 13
+LIBPATCH = 14
 
 PYDEPS = ["cryptography", "jsonschema"]
 
@@ -640,6 +640,17 @@ def generate_ca(
         private_key_object.public_key()  # type: ignore[arg-type]
     )
     subject_identifier = key_identifier = subject_identifier_object.public_bytes()
+    key_usage = x509.KeyUsage(
+        digital_signature=True,
+        key_encipherment=True,
+        key_cert_sign=True,
+        key_agreement=False,
+        content_commitment=False,
+        data_encipherment=False,
+        crl_sign=False,
+        encipher_only=False,
+        decipher_only=False,
+    )
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -657,6 +668,7 @@ def generate_ca(
             ),
             critical=False,
         )
+        .add_extension(key_usage, critical=True)
         .add_extension(
             x509.BasicConstraints(ca=True, path_length=None),
             critical=True,
@@ -1128,6 +1140,7 @@ class TLSCertificatesProvidesV2(Object):
             None
         """
         if event.unit is None:
+            logger.error("Relation_changed event does not have a unit.")
             return
         if not self.model.unit.is_leader():
             return
