@@ -180,6 +180,7 @@ class TestCharm(unittest.TestCase):
     def test_given_root_certificates_when_certificate_request_then_certificates_are_generated(
         self, patch_generate_certificate, patch_set_certificate
     ):
+        is_ca = True
         self.harness.set_leader(is_leader=True)
         ca_certificate = "whatever CA certificate"
         private_key = "whatever private key"
@@ -200,10 +201,20 @@ class TestCharm(unittest.TestCase):
 
         self.harness.charm._on_certificate_creation_request(
             event=Mock(
-                relation_id=relation_id, certificate_signing_request=certificate_signing_request
+                relation_id=relation_id,
+                certificate_signing_request=certificate_signing_request,
+                is_ca=is_ca,
             )
         )
 
+        patch_generate_certificate.assert_called_with(
+            ca=ca_certificate.encode(),
+            ca_key=private_key.encode(),
+            ca_key_password=private_key_password.encode(),
+            csr=certificate_signing_request.encode(),
+            validity=365,
+            is_ca=is_ca,
+        )
         patch_set_certificate.assert_called_with(
             certificate="new certificate",
             ca=ca_certificate,
