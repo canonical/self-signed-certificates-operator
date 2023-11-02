@@ -34,7 +34,6 @@ SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
 def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
     """Returns whether the certificate has the given common name."""
-    print(certificate)
     loaded_certificate = x509.load_pem_x509_certificate(certificate)
     certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
         x509.oid.NameOID.COMMON_NAME
