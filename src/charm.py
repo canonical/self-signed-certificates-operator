@@ -20,6 +20,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
     generate_certificate,
     generate_private_key,
 )
+from cryptography import x509
 from ops.charm import ActionEvent, CharmBase, EventBase, RelationJoinedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
@@ -31,6 +32,17 @@ CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
 
+def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
+    """Returns whether the certificate has the given common name."""
+    print(certificate)
+    loaded_certificate = x509.load_pem_x509_certificate(certificate)
+    certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
+        x509.oid.NameOID.COMMON_NAME
+    )[0].value
+
+    return certificate_common_name == common_name
+
+
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
 
@@ -38,12 +50,13 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Observes config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV2(self, "certificates")
-        self.framework.observe(self.on.config_changed, self._configure_ca)
+        self.framework.observe(self.on.update_status, self._configure)
+        self.framework.observe(self.on.config_changed, self._configure)
+        self.framework.observe(self.on.secret_expired, self._configure)
         self.framework.observe(
             self.tls_certificates.on.certificate_creation_request,
             self._on_certificate_creation_request,
         )
-        self.framework.observe(self.on.secret_expired, self._configure_ca)
         self.framework.observe(self.on.get_ca_certificate_action, self._on_get_ca_certificate)
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
@@ -145,7 +158,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             )
         logger.info("Root certificates generated and stored.")
 
-    def _configure_ca(self, event: EventBase) -> None:
+    def _configure(self, event: EventBase) -> None:
         """Validates configuration and generates root certificate.
 
         It will revoke the certificates signed by the previous root certificate.
@@ -160,16 +173,26 @@ class SelfSignedCertificatesCharm(CharmBase):
                 f"The following configuration values are not valid: {invalid_configs}"
             )
             return
-        self._generate_root_certificate()
-        self.tls_certificates.revoke_all_certificates()
-        logger.info("Revoked all previously issued certificates.")
+        if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
+            self._generate_root_certificate()
+            self.tls_certificates.revoke_all_certificates()
+            logger.info("Revoked all previously issued certificates.")
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
         self.unit.status = ActiveStatus()
 
+    def _root_certificate_matches_config(self) -> bool:
+        """Returns whether the stored root certificate matches with the config."""
+        if not self._config_ca_common_name:
+            raise ValueError("CA common name should not be empty")
+        ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+        ca_certificate_secret_content = ca_certificate_secret.get_content()
+        ca = ca_certificate_secret_content["ca-certificate"].encode()
+        return certificate_has_common_name(certificate=ca, common_name=self._config_ca_common_name)
+
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""
-        for relation in self.tls_certificates.get_requirer_csrs_with_no_certs():
+        for relation in self.tls_certificates.get_outstanding_certificate_requests():
             for request in relation["unit_csrs"]:
                 self._generate_self_signed_certificate(
                     csr=request["certificate_signing_request"],

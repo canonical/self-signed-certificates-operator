@@ -108,7 +108,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.get_requirer_csrs_with_no_certs")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.get_outstanding_certificate_requests")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
@@ -119,7 +119,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_ca,
         patch_generate_password,
         patch_generate_private_key,
-        patch_get_requirer_csrs_with_no_certs,
+        patch_get_outstanding_certificate_requests,
         patch_set_relation_certificate,
     ):
         validity = 100
@@ -133,7 +133,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_ca.return_value = ca.encode()
         patch_generate_password.return_value = private_key_password
         patch_generate_private_key.return_value = private_key.encode()
-        patch_get_requirer_csrs_with_no_certs.return_value = [
+        patch_get_outstanding_certificate_requests.return_value = [
             {
                 "relation_id": relation_id,
                 "unit_csrs": [
@@ -270,6 +270,7 @@ class TestCharm(unittest.TestCase):
             certificate_signing_request=certificate_signing_request,
         )
 
+    @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
@@ -278,7 +279,9 @@ class TestCharm(unittest.TestCase):
         patch_generate_ca,
         patch_generate_password,
         patch_generate_private_key,
+        patch_certificate_has_common_name,
     ):
+        patch_certificate_has_common_name.return_value = False
         initial_common_name = "common-name-initial.com"
         new_common_name = "common-name-new.com"
         ca_certificate_1_string = "whatever CA certificate 1"
