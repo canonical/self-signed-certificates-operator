@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import ops
 import ops.testing
-from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus
 
 from charm import SelfSignedCertificatesCharm
 
@@ -107,6 +107,65 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.get_requirer_csrs_with_no_certs")
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_password")
+    @patch("charm.generate_ca")
+    @patch("charm.generate_certificate")
+    def test_given_outstanding_certificate_requests_when_config_changed_then_requests_processed(
+        self,
+        patch_generate_certificate,
+        patch_generate_ca,
+        patch_generate_password,
+        patch_generate_private_key,
+        patch_get_requirer_csrs_with_no_certs,
+        patch_set_relation_certificate,
+    ):
+        validity = 100
+        relation_id = 123
+        ca = "whatever CA certificate"
+        private_key_password = "password"
+        private_key = "whatever private key"
+        requirer_csr = "whatever CSR"
+        requirer_is_ca = True
+        generated_certificate = "whatever certificate"
+        patch_generate_ca.return_value = ca.encode()
+        patch_generate_password.return_value = private_key_password
+        patch_generate_private_key.return_value = private_key.encode()
+        patch_get_requirer_csrs_with_no_certs.return_value = [
+            {
+                "relation_id": relation_id,
+                "unit_csrs": [
+                    {
+                        "certificate_signing_request": requirer_csr,
+                        "is_ca": requirer_is_ca,
+                    }
+                ],
+            }
+        ]
+        patch_generate_certificate.return_value = generated_certificate.encode()
+        key_values = {"ca-common-name": "pizza.com", "certificate-validity": validity}
+        self.harness.set_leader(is_leader=True)
+
+        self.harness.update_config(key_values=key_values)
+
+        patch_generate_certificate.assert_called_with(
+            ca=ca.encode(),
+            ca_key=private_key.encode(),
+            ca_key_password=private_key_password.encode(),
+            csr=requirer_csr.encode(),
+            validity=validity,
+            is_ca=requirer_is_ca,
+        )
+        patch_set_relation_certificate.assert_called_with(
+            certificate_signing_request=requirer_csr,
+            certificate=generated_certificate,
+            ca=ca,
+            chain=[ca, generated_certificate],
+            relation_id=relation_id,
+        )
+
     def test_given_invalid_config_when_certificate_request_then_status_is_blocked(self):
         self.harness.set_leader(is_leader=True)
         key_values = {"ca-common-name": "pizza.com", "certificate-validity": 0}
@@ -161,18 +220,6 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             ca_certificates_secret["private-key"],
             private_key_string,
-        )
-
-    def test_given_root_certificate_not_yet_generated_when_certificate_request_then_status_is_waiting(  # noqa: E501
-        self,
-    ):
-        self.harness.set_leader(is_leader=True)
-
-        self.harness.charm._on_certificate_creation_request(event=Mock())
-
-        self.assertEqual(
-            self.harness.model.unit.status,
-            WaitingStatus("Root Certificate is not yet generated"),
         )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")

@@ -22,7 +22,7 @@ from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ign
 )
 from ops.charm import ActionEvent, CharmBase, EventBase, RelationJoinedEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError, WaitingStatus
+from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,18 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.tls_certificates.revoke_all_certificates()
         logger.info("Revoked all previously issued certificates.")
         self._send_ca_cert()
+        self._process_outstanding_certificate_requests()
         self.unit.status = ActiveStatus()
+
+    def _process_outstanding_certificate_requests(self) -> None:
+        """Process outstanding certificate requests."""
+        for relation in self.tls_certificates.get_requirer_csrs_with_no_certs():
+            for request in relation["unit_csrs"]:
+                self._generate_self_signed_certificate(
+                    csr=request["certificate_signing_request"],
+                    is_ca=request["is_ca"],
+                    relation_id=relation["relation_id"],
+                )
 
     def _invalid_configs(self) -> list[str]:
         """Returns list of invalid configurations.
@@ -189,34 +200,37 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         if not self.unit.is_leader():
             return
-        if invalid_configs := self._invalid_configs():
-            self.unit.status = BlockedStatus(
-                f"The following configuration values are not valid: {invalid_configs}"
-            )
-            event.defer()
+        if self._invalid_configs():
+            logger.warning("Invalid configuration. Certificate cannot be generated.")
             return
         if not self._root_certificate_is_stored:
-            self.unit.status = WaitingStatus("Root Certificate is not yet generated")
-            event.defer()
+            logger.warning(
+                "Root certificate is not yet generated. Certificate cannot be generated."
+            )
             return
+        self._generate_self_signed_certificate(
+            csr=event.certificate_signing_request, is_ca=event.is_ca, relation_id=event.relation_id
+        )
+
+    def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int):
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content()
         certificate = generate_certificate(
             ca=ca_certificate_secret_content["ca-certificate"].encode(),
             ca_key=ca_certificate_secret_content["private-key"].encode(),
             ca_key_password=ca_certificate_secret_content["private-key-password"].encode(),
-            csr=event.certificate_signing_request.encode(),
+            csr=csr.encode(),
             validity=self._config_certificate_validity,
-            is_ca=event.is_ca,
+            is_ca=is_ca,
         ).decode()
         self.tls_certificates.set_relation_certificate(
-            certificate_signing_request=event.certificate_signing_request,
+            certificate_signing_request=csr,
             certificate=certificate,
             ca=ca_certificate_secret_content["ca-certificate"],
             chain=[ca_certificate_secret_content["ca-certificate"], certificate],
-            relation_id=event.relation_id,
+            relation_id=relation_id,
         )
-        logger.info(f"Generated certificate for relation {event.relation_id}")
+        logger.info("Generated certificate for relation %s", relation_id)
 
     def _on_get_ca_certificate(self, event: ActionEvent):
         """Handler for the get-ca-certificate action.
