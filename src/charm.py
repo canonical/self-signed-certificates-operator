@@ -231,10 +231,19 @@ class SelfSignedCertificatesCharm(CharmBase):
             )
             return
         self._generate_self_signed_certificate(
-            csr=event.certificate_signing_request, is_ca=event.is_ca, relation_id=event.relation_id
+            csr=event.certificate_signing_request,
+            is_ca=event.is_ca,
+            relation_id=event.relation_id,
         )
 
-    def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int):
+    def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int) -> None:
+        """Generates self-signed certificate.
+
+        Args:
+            csr (str): Certificate signing request
+            is_ca (bool): Whether the certificate is a CA
+            relation_id (int): Relation id
+        """
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content()
         certificate = generate_certificate(
