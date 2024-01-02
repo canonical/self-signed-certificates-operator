@@ -148,7 +148,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         }
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-            print(secret_content)
             secret.set_content(content=secret_content)
         else:
             self.app.add_secret(
