@@ -302,17 +302,19 @@ class TestCharm(unittest.TestCase):
 
         self.harness.update_config(key_values={"ca-common-name": new_common_name})
 
-        ca_certificates_secret = self.harness._backend.secret_get(label="ca-certificates")
+        ca_certificates_secret = self.harness.model.get_secret(label="ca-certificates")
+
+        secret_content = ca_certificates_secret.get_content(refresh=True)
         self.assertEqual(
-            ca_certificates_secret["ca-certificate"],
+            secret_content["ca-certificate"],
             ca_certificate_2_string,
         )
         self.assertEqual(
-            ca_certificates_secret["private-key-password"],
+            secret_content["private-key-password"],
             private_key_password_2,
         )
         self.assertEqual(
-            ca_certificates_secret["private-key"],
+            secret_content["private-key"],
             private_key_string_2,
         )
 
