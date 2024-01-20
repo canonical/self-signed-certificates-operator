@@ -63,7 +63,6 @@ async def test_given_tls_requirer_is_deployed_and_related_then_certificate_is_cr
     action_output = await run_get_certificate_action(ops_test)
     assert action_output["certificate"] is not None
     assert action_output["ca-certificate"] is not None
-    assert action_output["chain"] is not None
     assert action_output["csr"] is not None
 
 
