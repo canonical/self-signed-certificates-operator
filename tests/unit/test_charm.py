@@ -1,11 +1,13 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 import unittest
 from unittest.mock import Mock, patch
 
 import ops
 import ops.testing
+from charms.tls_certificates_interface.v2.tls_certificates import RequirerCSR
 from ops.model import ActiveStatus, BlockedStatus
 
 from charm import SelfSignedCertificatesCharm
@@ -134,15 +136,13 @@ class TestCharm(unittest.TestCase):
         patch_generate_password.return_value = private_key_password
         patch_generate_private_key.return_value = private_key.encode()
         patch_get_outstanding_certificate_requests.return_value = [
-            {
-                "relation_id": relation_id,
-                "unit_csrs": [
-                    {
-                        "certificate_signing_request": requirer_csr,
-                        "is_ca": requirer_is_ca,
-                    }
-                ],
-            }
+            RequirerCSR(
+                relation_id=relation_id,
+                application_name="tls-requirer",
+                unit_name="tls-requirer/0",
+                csr=requirer_csr,
+                is_ca=requirer_is_ca,
+            ),
         ]
         patch_generate_certificate.return_value = generated_certificate.encode()
         key_values = {"ca-common-name": "pizza.com", "certificate-validity": validity}
@@ -349,7 +349,16 @@ class TestCharm(unittest.TestCase):
         self.harness.charm._on_get_issued_certificates(action_event)
 
         expected_certificates = {
-            "tls-requirer": '[{"csr": "whatever csr", "certificate": "whatever cert"}]',
+            "certificates": json.dumps(
+                [
+                    {
+                        "relation_id": relation_id,
+                        "application_name": "tls-requirer",
+                        "csr": "whatever csr",
+                        "certificate": "whatever cert",
+                    }
+                ]
+            ),
         }
 
         action_event.set_results.assert_called_with(expected_certificates)

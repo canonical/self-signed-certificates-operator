@@ -77,7 +77,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
         """Handler for the get-issued-certificates action.
 
-        Outputs the issued certificates per application.
+        Outputs the issued certificates.
 
         Args:
             event (ActionEvent): Juju event.
@@ -89,7 +89,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not certificates:
             event.fail("No certificates issued yet.")
             return
-        event.set_results({key: json.dumps(value) for key, value in certificates.items()})
+        results = {"certificates": json.dumps([vars(certificate) for certificate in certificates])}
+        event.set_results(results)
 
     @property
     def _config_certificate_validity(self) -> int:
@@ -191,13 +192,12 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""
-        for relation in self.tls_certificates.get_outstanding_certificate_requests():
-            for request in relation["unit_csrs"]:
-                self._generate_self_signed_certificate(
-                    csr=request["certificate_signing_request"],
-                    is_ca=request["is_ca"],
-                    relation_id=relation["relation_id"],
-                )
+        for request in self.tls_certificates.get_outstanding_certificate_requests():
+            self._generate_self_signed_certificate(
+                csr=request.csr,
+                is_ca=request.is_ca,
+                relation_id=request.relation_id,
+            )
 
     def _invalid_configs(self) -> list[str]:
         """Returns list of invalid configurations.
