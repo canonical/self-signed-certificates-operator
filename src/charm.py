@@ -13,9 +13,9 @@ from typing import Optional
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
-from charms.tls_certificates_interface.v2.tls_certificates import (  # type: ignore[import]
+from charms.tls_certificates_interface.v3.tls_certificates import (  # type: ignore[import]
     CertificateCreationRequestEvent,
-    TLSCertificatesProvidesV2,
+    TLSCertificatesProvidesV3,
     generate_ca,
     generate_certificate,
     generate_private_key,
@@ -48,7 +48,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def __init__(self, *args):
         """Observes config change and certificate request events."""
         super().__init__(*args)
-        self.tls_certificates = TLSCertificatesProvidesV2(self, "certificates")
+        self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.secret_expired, self._configure)

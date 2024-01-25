@@ -7,12 +7,12 @@ from unittest.mock import Mock, patch
 
 import ops
 import ops.testing
-from charms.tls_certificates_interface.v2.tls_certificates import RequirerCSR
+from charms.tls_certificates_interface.v3.tls_certificates import RequirerCSR
 from ops.model import ActiveStatus, BlockedStatus
 
 from charm import SelfSignedCertificatesCharm
 
-TLS_LIB_PATH = "charms.tls_certificates_interface.v2.tls_certificates"
+TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
 
 
 class TestCharm(unittest.TestCase):
@@ -69,7 +69,7 @@ class TestCharm(unittest.TestCase):
             private_key_string,
         )
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.revoke_all_certificates")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.revoke_all_certificates")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
@@ -109,8 +109,8 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.get_outstanding_certificate_requests")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_outstanding_certificate_requests")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
@@ -222,7 +222,7 @@ class TestCharm(unittest.TestCase):
             private_key_string,
         )
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV2.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
     @patch("charm.generate_certificate")
     def test_given_root_certificates_when_certificate_request_then_certificates_are_generated(
         self, patch_generate_certificate, patch_set_certificate
@@ -356,6 +356,9 @@ class TestCharm(unittest.TestCase):
                         "application_name": "tls-requirer",
                         "csr": "whatever csr",
                         "certificate": "whatever cert",
+                        "ca": "whatever ca",
+                        "chain": ["whatever cert 1", "whatever cert 2"],
+                        "revoked": False,
                     }
                 ]
             ),
