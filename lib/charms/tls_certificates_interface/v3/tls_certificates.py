@@ -280,7 +280,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from ipaddress import IPv4Address
-from typing import Dict, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from cryptography import x509
 from cryptography.hazmat._oid import ExtensionOID
@@ -293,7 +293,6 @@ from ops.charm import (
     RelationBrokenEvent,
     RelationChangedEvent,
     SecretExpiredEvent,
-    UpdateStatusEvent,
 )
 from ops.framework import EventBase, EventSource, Handle, Object
 from ops.model import (
@@ -313,7 +312,7 @@ LIBAPI = 3
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 1
+LIBPATCH = 0
 
 PYDEPS = ["cryptography", "jsonschema"]
 
@@ -936,9 +935,11 @@ def generate_private_key(
     key_bytes = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.BestAvailableEncryption(password)
-        if password
-        else serialization.NoEncryption(),
+        encryption_algorithm=(
+            serialization.BestAvailableEncryption(password)
+            if password
+            else serialization.NoEncryption()
+        ),
     )
     return key_bytes
 
@@ -1263,16 +1264,11 @@ class TLSCertificatesProvidesV3(Object):
     ) -> List[ProviderCertificate]:
         """Returns a List of issued (non revoked) certificates.
 
-        It returns certificates from all relations if relation_id is not specified.
-
         Returns:
             List: List of ProviderCertificate objects
         """
         provider_certificates = self.get_provider_certificates(relation_id=relation_id)
-        non_revoked_certificates = [
-            certificate for certificate in provider_certificates if not certificate.revoked
-        ]
-        return non_revoked_certificates
+        return [certificate for certificate in provider_certificates if not certificate.revoked]
 
     def get_provider_certificates(
         self, relation_id: Optional[int] = None
@@ -1334,8 +1330,8 @@ class TLSCertificatesProvidesV3(Object):
         if not _relation_data_is_valid(event.relation, event.unit, REQUIRER_JSON_SCHEMA):
             logger.debug("Relation data did not pass JSON Schema validation")
             return
-        provider_certificates = self.get_provider_certificates()
-        requirer_csrs = self.get_requirer_csrs()
+        provider_certificates = self.get_provider_certificates(relation_id=event.relation.id)
+        requirer_csrs = self.get_requirer_csrs(relation_id=event.relation.id)
         provider_csrs = [
             certificate_creation_request.csr
             for certificate_creation_request in provider_certificates
@@ -1347,9 +1343,9 @@ class TLSCertificatesProvidesV3(Object):
                     relation_id=certificate_request.relation_id,
                     is_ca=certificate_request.is_ca,
                 )
-        self._revoke_certificates_for_which_no_csr_exists()
+        self._revoke_certificates_for_which_no_csr_exists(relation_id=event.relation.id)
 
-    def _revoke_certificates_for_which_no_csr_exists(self) -> None:
+    def _revoke_certificates_for_which_no_csr_exists(self, relation_id: int) -> None:
         """Revokes certificates for which no unit has a CSR.
 
         Goes through all generated certificates and compare against the list of CSRs for all units.
@@ -1357,8 +1353,8 @@ class TLSCertificatesProvidesV3(Object):
         Returns:
             None
         """
-        provider_certificates = self.get_provider_certificates()
-        requirer_csrs = self.get_requirer_csrs()
+        provider_certificates = self.get_provider_certificates(relation_id)
+        requirer_csrs = self.get_requirer_csrs(relation_id)
         list_of_csrs = [csr.csr for csr in requirer_csrs]
         for certificate in provider_certificates:
             if certificate.csr not in list_of_csrs:
@@ -1444,6 +1440,7 @@ class TLSCertificatesProvidesV3(Object):
             app_name (str): Application name that the CSR belongs to.
             csr (str): Certificate Signing Request.
             relation_id (Optional[int]): Relation ID
+
         Returns:
             bool: True/False depending on whether a certificate has been issued for the given CSR.
         """
@@ -1569,7 +1566,7 @@ class TLSCertificatesRequiresV3(Object):
             if requirer_csr.csr == csr and requirer_csr.is_ca == is_ca:
                 logger.info("CSR already in relation data - Doing nothing")
                 return
-        new_csr_dict: Dict[str, Union[bool, str]] = {
+        new_csr_dict = {
             "certificate_signing_request": csr,
             "ca": is_ca,
         }
