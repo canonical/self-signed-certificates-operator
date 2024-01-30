@@ -1709,7 +1709,7 @@ class TLSCertificatesRequiresV3(Object):
         """Gets the list of CSR's that were sent to the provider.
 
         You can choose to get only the CSR's that have a certificate assigned or only the CSR's
-        that don't.
+          that don't.
 
         Args:
             fulfilled_only (bool): This option will discard CSRs that don't have certificates yet.

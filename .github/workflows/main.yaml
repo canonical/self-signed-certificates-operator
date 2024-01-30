@@ -8,7 +8,8 @@ on:
 jobs:
   check-libraries:
     uses: ./.github/workflows/check-libraries.yaml
-    secrets: inherit
+    secrets:
+      CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
 
   lint-report:
     uses: ./.github/workflows/lint-report.yaml
