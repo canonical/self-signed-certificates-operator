@@ -6,7 +6,7 @@ This Self-Signed-Certificates Terraform module aims to deploy the [self-signed-c
 
 ### Prerequisites
 
-The following software and tools needs to be installed and should be running in the local environment.
+The following software and tools needs to be installed and should be running in the local environment. Please [set up your environment](https://discourse.charmhub.io/t/set-up-your-development-environment-with-microk8s-for-juju-terraform-provider/13109) before deployment.
 
 - `microk8s`
 - `juju 3.x`
@@ -23,7 +23,7 @@ sudo microk8s enable hostpath-storage
 Add a Juju model:
 
 ```console
-juju add model <model-name>
+juju add-model <model-name>
 ```
 
 Initialise the provider:
@@ -32,22 +32,20 @@ Initialise the provider:
 terraform init
 ```
 
-Customize the configuration inputs under `terraform.tfvars` file according to requirement.
-
-Replace the variable in the `terraform.tfvars` file:
+Fill the mandatory config options in the `terraform.tfvars` file:
 
 ```yaml
 # Mandatory Config Options
 model_name = "put your model-name here"
 ```
 
-Run Terraform Plan by providing var-file:
+Create the Terraform Plan:
 
 ```console
 terraform plan -var-file="terraform.tfvars" 
 ```
 
-Deploy the resources, skip the approval:
+Deploy the resources:
 
 ```console
 terraform apply -auto-approve 
@@ -63,7 +61,7 @@ juju status
 
 ### Clean up
 
-Remove the application:
+Destroy the deployment:
 
 ```console
 terraform destroy -auto-approve
