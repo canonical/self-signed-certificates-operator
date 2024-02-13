@@ -1,5 +1,8 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 resource "juju_application" "self-signed-certificates" {
-  name  = "self-signed-certificates"
+  name  = var.app_name
   model = var.model_name
 
   charm {
@@ -7,6 +10,6 @@ resource "juju_application" "self-signed-certificates" {
     channel = var.channel
     base    = "ubuntu@22.04"
   }
-  config = var.cert-config
+  config = var.config
   units  = 1
 }
