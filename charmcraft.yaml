@@ -26,6 +26,8 @@ bases:
 
 parts:
   charm:
+    build-packages:
+      - cargo
     charm-binary-python-packages:
       - cryptography
       - jsonschema
