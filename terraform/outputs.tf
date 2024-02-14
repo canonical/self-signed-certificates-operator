@@ -10,10 +10,10 @@ output "app_name" {
 
 output "certificates_endpoint" {
   description = "Name of the endpoint provided for `tls-certificates` interface."
-  value = "certificates"
+  value       = "certificates"
 }
 
 output "send_ca_cert_endpoint" {
   description = "Name of the endpoint provided for `certificate_transfer` interface."
-  value = "send-ca-cert"
+  value       = "send-ca-cert"
 }
