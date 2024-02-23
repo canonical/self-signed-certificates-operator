@@ -25,9 +25,7 @@ charset-normalizer==3.3.2
 click==8.1.7
     # via black
 coverage[toml]==7.4.2
-    # via
-    #   -r test-requirements.in
-    #   coverage
+    # via -r test-requirements.in
 cryptography==42.0.4
     # via paramiko
 decorator==5.1.1
@@ -194,7 +192,7 @@ traitlets==5.14.1
     #   matplotlib-inline
 types-pyyaml==6.0.12.12
     # via -r test-requirements.in
-types-setuptools==69.1.0.20240217
+types-setuptools==69.1.0.20240223
     # via -r test-requirements.in
 types-toml==0.10.8.7
     # via -r test-requirements.in
