@@ -5,7 +5,6 @@ import unittest
 
 import ops
 import ops.testing
-
 from charm import CA_CERTIFICATES_SECRET_LABEL, SelfSignedCertificatesCharm
 
 

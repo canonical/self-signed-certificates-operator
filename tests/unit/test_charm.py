@@ -7,10 +7,9 @@ from unittest.mock import Mock, patch
 
 import ops
 import ops.testing
+from charm import SelfSignedCertificatesCharm
 from charms.tls_certificates_interface.v3.tls_certificates import RequirerCSR
 from ops.model import ActiveStatus, BlockedStatus
-
-from charm import SelfSignedCertificatesCharm
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
 

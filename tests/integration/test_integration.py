@@ -77,7 +77,7 @@ async def test_given_charm_scaled_then_charm_does_not_crash(
 
 
 async def run_get_certificate_action(ops_test) -> dict:
-    """Runs `get-certificate` on the `tls-requirer-requirer/0` unit.
+    """Run `get-certificate` on the `tls-requirer-requirer/0` unit.
 
     Args:
         ops_test (OpsTest): OpsTest

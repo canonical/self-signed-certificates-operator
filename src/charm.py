@@ -13,7 +13,7 @@ from typing import Optional
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
-from charms.tls_certificates_interface.v3.tls_certificates import (  # type: ignore[import]
+from charms.tls_certificates_interface.v3.tls_certificates import (
     CertificateCreationRequestEvent,
     TLSCertificatesProvidesV3,
     generate_ca,
@@ -21,7 +21,8 @@ from charms.tls_certificates_interface.v3.tls_certificates import (  # type: ign
     generate_private_key,
 )
 from cryptography import x509
-from ops.charm import ActionEvent, CharmBase, EventBase, RelationJoinedEvent
+from ops.charm import ActionEvent, CharmBase, RelationJoinedEvent
+from ops.framework import EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 
@@ -33,10 +34,10 @@ SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
 
 def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
-    """Returns whether the certificate has the given common name."""
+    """Return whether the certificate has the given common name."""
     loaded_certificate = x509.load_pem_x509_certificate(certificate)
     certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
-        x509.oid.NameOID.COMMON_NAME
+        x509.oid.NameOID.COMMON_NAME  # type: ignore[reportAttributeAccessIssue]
     )[0].value
 
     return certificate_common_name == common_name
@@ -46,7 +47,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
 
     def __init__(self, *args):
-        """Observes config change and certificate request events."""
+        """Observe config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
         self.framework.observe(self.on.update_status, self._configure)
@@ -67,7 +68,7 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     @property
     def _config_root_ca_certificate_validity(self) -> int:
-        """Returns Root CA certificate validity (in days).
+        """Return Root CA certificate validity (in days).
 
         Returns:
             int: Certificate validity (in days)
@@ -75,7 +76,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         return int(self.model.config.get("root-ca-validity"))  # type: ignore[arg-type]
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
-        """Handler for the get-issued-certificates action.
+        """Handle get-issued-certificates action.
 
         Outputs the issued certificates.
 
@@ -115,7 +116,7 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     @property
     def _root_certificate_is_stored(self) -> bool:
-        """Returns whether self-signed certificate is stored Juju secret.
+        """Return whether self-signed certificate is stored Juju secret.
 
         Returns:
             bool: Whether certificates are stored..
@@ -127,7 +128,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             return False
 
     def _generate_root_certificate(self) -> None:
-        """Generates root certificate to be used to sign certificates.
+        """Generate root certificate to be used to sign certificates.
 
         Stores the root certificate in a juju secret.
         If the secret is already created, we simply update its content, else we create a
@@ -159,7 +160,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         logger.info("Root certificates generated and stored.")
 
     def _configure(self, event: EventBase) -> None:
-        """Validates configuration and generates root certificate.
+        """Validate configuration and generates root certificate.
 
         It will revoke the certificates signed by the previous root certificate.
 
@@ -182,7 +183,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _root_certificate_matches_config(self) -> bool:
-        """Returns whether the stored root certificate matches with the config."""
+        """Return whether the stored root certificate matches with the config."""
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
@@ -200,7 +201,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             )
 
     def _invalid_configs(self) -> list[str]:
-        """Returns list of invalid configurations.
+        """Return list of invalid configurations.
 
         Returns:
             list: List of invalid config keys.
@@ -215,7 +216,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         return invalid_configs
 
     def _on_certificate_creation_request(self, event: CertificateCreationRequestEvent) -> None:
-        """Handler for certificate requests.
+        """Handle certificate requests.
 
         Args:
             event (CertificateCreationRequestEvent): Juju event
@@ -237,7 +238,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
 
     def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int) -> None:
-        """Generates self-signed certificate.
+        """Generate self-signed certificate.
 
         Args:
             csr (str): Certificate signing request
@@ -264,7 +265,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         logger.info("Generated certificate for relation %s", relation_id)
 
     def _on_get_ca_certificate(self, event: ActionEvent):
-        """Handler for the get-ca-certificate action.
+        """Handle the get-ca-certificate action.
 
         Args:
             event (ActionEvent): Juju event
@@ -301,7 +302,7 @@ class SelfSignedCertificatesCharm(CharmBase):
 
 
 def generate_password() -> str:
-    """Generates a random string containing 64 bytes.
+    """Generate a random string containing 64 bytes.
 
     Returns:
         str: Password
