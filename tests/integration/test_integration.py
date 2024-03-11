@@ -22,6 +22,7 @@ TLS_REQUIRER_CHARM_NAME = "tls-certificates-requirer"
 @pytest.mark.abort_on_fail
 async def build_and_deploy(ops_test: OpsTest):
     """Build the charm-under-test and deploy it."""
+    assert ops_test.model
     charm = await ops_test.build_charm(".")
     await ops_test.model.deploy(
         charm,
@@ -41,6 +42,7 @@ async def test_given_charm_is_built_when_deployed_then_status_is_active(
     ops_test: OpsTest,
     build_and_deploy,
 ):
+    assert ops_test.model
     await ops_test.model.wait_for_idle(
         apps=[APP_NAME],
         status="active",
@@ -52,6 +54,7 @@ async def test_given_tls_requirer_is_deployed_and_related_then_certificate_is_cr
     ops_test: OpsTest,
     build_and_deploy,
 ):
+    assert ops_test.model
     await ops_test.model.add_relation(
         relation1=f"{APP_NAME}:certificates", relation2=f"{TLS_REQUIRER_CHARM_NAME}"
     )
@@ -70,9 +73,10 @@ async def test_given_charm_scaled_then_charm_does_not_crash(
     ops_test: OpsTest,
     build_and_deploy,
 ):
-    await ops_test.model.applications[APP_NAME].scale(2)
+    assert ops_test.model
+    await ops_test.model.applications[APP_NAME].scale(2)  # type: ignore
     await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=2)
-    await ops_test.model.applications[APP_NAME].scale(1)
+    await ops_test.model.applications[APP_NAME].scale(1)  # type: ignore
     await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=1)
 
 
@@ -85,6 +89,7 @@ async def run_get_certificate_action(ops_test) -> dict:
     Returns:
         dict: Action output
     """
+    assert ops_test.model
     tls_requirer_unit = ops_test.model.units[f"{TLS_REQUIRER_CHARM_NAME}/0"]
     action = await tls_requirer_unit.run_action(
         action_name="get-certificate",
