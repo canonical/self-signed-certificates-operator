@@ -8,7 +8,7 @@ import datetime
 import json
 import logging
 import secrets
-from typing import Optional
+from typing import Optional, cast
 
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
@@ -112,7 +112,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             str: Common name
         """
-        return self.model.config.get("ca-common-name", None)
+        return cast(Optional[str], self.model.config.get("ca-common-name", None))
 
     @property
     def _root_certificate_is_stored(self) -> bool:
