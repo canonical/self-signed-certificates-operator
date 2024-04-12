@@ -23,8 +23,9 @@ class TestCharm(unittest.TestCase):
 
     def test_given_invalid_config_when_config_changed_then_status_is_blocked(self):
         key_values = {"ca-common-name": "", "certificate-validity": 100}
-
         self.harness.update_config(key_values=key_values)
+
+        self.harness.evaluate_status()
 
         self.assertEqual(
             self.harness.model.unit.status,
@@ -103,8 +104,9 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key.return_value = b"whatever private key"
         key_values = {"ca-common-name": "pizza.com", "certificate-validity": 100}
         self.harness.set_leader(is_leader=True)
-
         self.harness.update_config(key_values=key_values)
+
+        self.harness.evaluate_status()
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
@@ -169,8 +171,9 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         key_values = {"ca-common-name": "pizza.com", "certificate-validity": 0}
         self.harness.update_config(key_values=key_values)
-
         self.harness.charm._on_certificate_creation_request(event=Mock())
+
+        self.harness.evaluate_status()
 
         self.assertEqual(
             self.harness.model.unit.status,

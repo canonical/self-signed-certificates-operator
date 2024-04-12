@@ -21,7 +21,7 @@ from charms.tls_certificates_interface.v3.tls_certificates import (
     generate_private_key,
 )
 from cryptography import x509
-from ops.charm import ActionEvent, CharmBase, RelationJoinedEvent
+from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoinedEvent
 from ops.framework import EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
@@ -50,6 +50,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Observe config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
+        self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.secret_expired, self._configure)
@@ -65,6 +66,18 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._on_send_ca_cert_relation_joined,
         )
+
+    def _on_collect_unit_status(self, event: CollectStatusEvent):
+         """Centralized status management for the charm."""
+         if not self.unit.is_leader():
+            event.add_status(BlockedStatus("Scaling is not implemented for this charm"))
+            return
+         if invalid_configs := self._invalid_configs():
+            event.add_status(BlockedStatus(
+                f"The following configuration values are not valid: {invalid_configs}"
+            ))
+            return
+         event.add_status(ActiveStatus())
 
     @property
     def _config_root_ca_certificate_validity(self) -> int:
@@ -169,10 +182,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         if not self.unit.is_leader():
             return
-        if invalid_configs := self._invalid_configs():
-            self.unit.status = BlockedStatus(
-                f"The following configuration values are not valid: {invalid_configs}"
-            )
+        if self._invalid_configs():
             return
         if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
             self._generate_root_certificate()
@@ -180,7 +190,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             logger.info("Revoked all previously issued certificates.")
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
-        self.unit.status = ActiveStatus()
 
     def _root_certificate_matches_config(self) -> bool:
         """Return whether the stored root certificate matches with the config."""
