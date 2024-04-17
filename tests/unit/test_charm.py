@@ -110,32 +110,67 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_outstanding_certificate_requests")
+    @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
-    @patch("charm.generate_certificate")
-    def test_given_outstanding_certificate_requests_when_config_changed_then_requests_processed(
+    def test_given_new_common_name_when_config_changed_then_new_root_ca_is_stored(
         self,
-        patch_generate_certificate,
         patch_generate_ca,
         patch_generate_password,
         patch_generate_private_key,
-        patch_get_outstanding_certificate_requests,
-        patch_set_relation_certificate,
+        patch_certificate_has_common_name,
     ):
         validity = 100
-        relation_id = 123
-        ca = "whatever CA certificate"
+        initial_ca = "whatever initial CA certificate"
+        new_ca = "whatever CA certificate"
         private_key_password = "password"
         private_key = "whatever private key"
-        requirer_csr = "whatever CSR"
-        requirer_is_ca = True
-        generated_certificate = "whatever certificate"
-        patch_generate_ca.return_value = ca.encode()
+        patch_certificate_has_common_name.return_value = False
+        self.harness._backend.secret_add(
+            label="ca-certificates",
+            content={
+                "ca-certificate": initial_ca,
+                "private-key": private_key,
+                "private-key-password": private_key_password,
+            },
+        )
+        patch_generate_ca.return_value = new_ca.encode()
         patch_generate_password.return_value = private_key_password
         patch_generate_private_key.return_value = private_key.encode()
+
+        key_values = {"ca-common-name": "pizza.com", "certificate-validity": validity}
+        self.harness.set_leader(is_leader=True)
+
+        self.harness.update_config(key_values=key_values)
+
+        secret =self.harness.model.get_secret(label="ca-certificates")
+        secret_content = secret.get_content(refresh=True)
+        assert secret_content["ca-certificate"] == new_ca
+
+    @patch("charm.certificate_has_common_name")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_outstanding_certificate_requests")
+    @patch("charm.generate_certificate")
+    def test_given_outstanding_certificate_requests_when_secret_changed_then_certificates_are_generated(  # noqa: E501
+        self,
+        patch_generate_certificate,
+        patch_get_outstanding_certificate_requests,
+        patch_set_relation_certificate,
+        patch_certificate_has_common_name,
+    ):
+        private_key = "whatever"
+        private_key_password = "whatever"
+        ca = "whatever CA certificate"
+        requirer_csr = "whatever CSR"
+        requirer_is_ca = False
+        generated_certificate = "whatever certificate"
+        patch_certificate_has_common_name.return_value = True
+        self.harness.set_leader(is_leader=True)
+        relation_id = self.harness.add_relation(
+            relation_name="certificates", remote_app="tls-requirer"
+        )
+        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="tls-requirer/0")
         patch_get_outstanding_certificate_requests.return_value = [
             RequirerCSR(
                 relation_id=relation_id,
@@ -146,19 +181,18 @@ class TestCharm(unittest.TestCase):
             ),
         ]
         patch_generate_certificate.return_value = generated_certificate.encode()
-        key_values = {"ca-common-name": "pizza.com", "certificate-validity": validity}
-        self.harness.set_leader(is_leader=True)
 
-        self.harness.update_config(key_values=key_values)
-
-        patch_generate_certificate.assert_called_with(
-            ca=ca.encode(),
-            ca_key=private_key.encode(),
-            ca_key_password=private_key_password.encode(),
-            csr=requirer_csr.encode(),
-            validity=validity,
-            is_ca=requirer_is_ca,
+        self.harness._backend.secret_add(
+            label="ca-certificates",
+            content={
+                "ca-certificate": ca,
+                "private-key": private_key,
+                "private-key-password": private_key_password,
+            },
         )
+        event = Mock()
+        self.harness.charm._configure(event)
+
         patch_set_relation_certificate.assert_called_with(
             certificate_signing_request=requirer_csr,
             certificate=generated_certificate,

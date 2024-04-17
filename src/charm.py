@@ -54,6 +54,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.secret_expired, self._configure)
+        self.framework.observe(self.on.secret_changed, self._configure)
         self.framework.observe(
             self.tls_certificates.on.certificate_creation_request,
             self._on_certificate_creation_request,
@@ -188,6 +189,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self._generate_root_certificate()
             self.tls_certificates.revoke_all_certificates()
             logger.info("Revoked all previously issued certificates.")
+            return
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
 
@@ -196,7 +198,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-        ca_certificate_secret_content = ca_certificate_secret.get_content()
+        ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         ca = ca_certificate_secret_content["ca-certificate"].encode()
         return certificate_has_common_name(certificate=ca, common_name=self._config_ca_common_name)
 
@@ -255,7 +257,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             relation_id (int): Relation id
         """
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-        ca_certificate_secret_content = ca_certificate_secret.get_content()
+        ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         certificate = generate_certificate(
             ca=ca_certificate_secret_content["ca-certificate"].encode(),
             ca_key=ca_certificate_secret_content["private-key"].encode(),
@@ -283,7 +285,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             event.fail("Root Certificate is not yet generated")
             return
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-        ca_certificate_secret_content = ca_certificate_secret.get_content()
+        ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         event.set_results({"ca-certificate": ca_certificate_secret_content["ca-certificate"]})
 
     def _on_send_ca_cert_relation_joined(self, event: RelationJoinedEvent):
@@ -298,7 +300,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         send_ca_cert = CertificateTransferProvides(self, SEND_CA_CERT_REL_NAME)
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-            secret_content = secret.get_content()
+            secret_content = secret.get_content(refresh=True)
             ca = secret_content["ca-certificate"]
             if rel_id:
                 send_ca_cert.set_certificate("", ca, [], relation_id=rel_id)
