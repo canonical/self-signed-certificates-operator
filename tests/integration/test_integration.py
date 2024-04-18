@@ -44,10 +44,10 @@ async def wait_for_requirer_ca_certificate(ops_test: OpsTest, ca_common_name: st
 
 @pytest.fixture(scope="module")
 @pytest.mark.abort_on_fail
-async def build_and_deploy(ops_test: OpsTest):
+async def deploy(ops_test: OpsTest, request):
     """Build the charm-under-test and deploy it."""
     assert ops_test.model
-    charm = await ops_test.build_charm(".")
+    charm = Path(request.config.getoption("--charm_path")).resolve()
     await ops_test.model.deploy(
         charm,
         application_name=APP_NAME,
@@ -65,7 +65,7 @@ async def build_and_deploy(ops_test: OpsTest):
 @pytest.mark.abort_on_fail
 async def test_given_charm_is_built_when_deployed_then_status_is_active(
     ops_test: OpsTest,
-    build_and_deploy,
+    deploy,
 ):
     assert ops_test.model
     await ops_test.model.wait_for_idle(
@@ -77,7 +77,7 @@ async def test_given_charm_is_built_when_deployed_then_status_is_active(
 
 async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_is_provided(
     ops_test: OpsTest,
-    build_and_deploy,
+    deploy,
 ):
     assert ops_test.model
     await ops_test.model.integrate(
@@ -92,7 +92,7 @@ async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_i
 
 async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_changed_then_new_certificate_is_provided(  # noqa: E501
     ops_test: OpsTest,
-    build_and_deploy,
+    deploy,
 ):
     new_common_name = "newexample.org"
     assert ops_test.model
@@ -110,7 +110,7 @@ async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_chang
 
 async def test_given_charm_scaled_then_charm_does_not_crash(
     ops_test: OpsTest,
-    build_and_deploy,
+    deploy,
 ):
     assert ops_test.model
     await ops_test.model.applications[APP_NAME].scale(2)  # type: ignore
