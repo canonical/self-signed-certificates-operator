@@ -29,5 +29,10 @@ provides:
     description: |
       Send our CA certificate so clients can trust the CA by means of forming a relation.
 
+requires:
+  tracing:
+    interface: tracing
+    limit: 1
+
 assumes:
   - juju >= 3.1

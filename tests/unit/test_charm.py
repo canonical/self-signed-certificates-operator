@@ -190,8 +190,8 @@ class TestCharm(unittest.TestCase):
                 "private-key-password": private_key_password,
             },
         )
-        event = Mock()
-        self.harness.charm._configure(event)
+
+        self.harness.update_config()
 
         patch_set_relation_certificate.assert_called_with(
             certificate_signing_request=requirer_csr,
@@ -205,7 +205,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         key_values = {"ca-common-name": "pizza.com", "certificate-validity": 0}
         self.harness.update_config(key_values=key_values)
-        self.harness.charm._on_certificate_creation_request(event=Mock())
+        self.harness.charm._on_certificate_creation_request(event=Mock())  # type: ignore[reportAttributeAccessIssue]
 
         self.harness.evaluate_status()
 
@@ -282,7 +282,7 @@ class TestCharm(unittest.TestCase):
             },
         )
 
-        self.harness.charm._on_certificate_creation_request(
+        self.harness.charm._on_certificate_creation_request(  # type: ignore[reportAttributeAccessIssue]
             event=Mock(
                 relation_id=relation_id,
                 certificate_signing_request=certificate_signing_request,
@@ -357,11 +357,10 @@ class TestCharm(unittest.TestCase):
     def test_given_no_certificates_issued_when_get_issued_certificates_action_then_action_fails(
         self,
     ):
-        action_event = Mock(params={})
+        with self.assertRaises(ops.testing.ActionFailed) as e:
+            self.harness.run_action("get-issued-certificates")
 
-        self.harness.charm._on_get_issued_certificates(action_event)
-
-        action_event.fail.assert_called_with("No certificates issued yet.")
+        self.assertEqual(e.exception.message, "No certificates issued yet.")
 
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
         self,
@@ -372,7 +371,7 @@ class TestCharm(unittest.TestCase):
         )
         self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="tls-requirer/0")
 
-        self.harness.charm.tls_certificates.set_relation_certificate(
+        self.harness.charm.tls_certificates.set_relation_certificate(  # type: ignore[reportAttributeAccessIssue]
             certificate_signing_request="whatever csr",
             certificate="whatever cert",
             ca="whatever ca",
@@ -380,9 +379,8 @@ class TestCharm(unittest.TestCase):
             relation_id=relation_id,
         )
 
-        action_event = Mock()
 
-        self.harness.charm._on_get_issued_certificates(action_event)
+        action_output = self.harness.run_action("get-issued-certificates")
 
         expected_certificates = {
             "certificates": json.dumps(
@@ -400,7 +398,7 @@ class TestCharm(unittest.TestCase):
             ),
         }
 
-        action_event.set_results.assert_called_with(expected_certificates)
+        self.assertEqual(action_output.results, expected_certificates)
 
     def test_given_ca_cert_generated_when_get_ca_certificate_action_then_returns_ca_certificate(
         self,
@@ -417,16 +415,17 @@ class TestCharm(unittest.TestCase):
             },
         )
 
-        action_event = Mock()
-        self.harness.charm._on_get_ca_certificate(action_event)
+        action_output = self.harness.run_action("get-ca-certificate")
         expected_certificate = {
             "ca-certificate": ca_certificate,
         }
 
-        action_event.set_results.assert_called_with(expected_certificate)
+        self.assertEqual(action_output.results, expected_certificate)
 
     def test_given_ca_cert_not_generated_when_get_ca_certificate_action_then_action_fails(self):
         self.harness.set_leader(is_leader=True)
-        action_event = Mock()
-        self.harness.charm._on_get_ca_certificate(action_event)
-        action_event.fail.assert_called_with("Root Certificate is not yet generated")
+
+        with self.assertRaises(ops.testing.ActionFailed) as e:
+            self.harness.run_action("get-ca-certificate")
+
+        self.assertEqual(e.exception.message, "Root Certificate is not yet generated")

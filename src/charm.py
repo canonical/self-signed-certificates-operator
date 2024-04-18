@@ -13,6 +13,8 @@ from typing import Optional, cast
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
+from charms.tempo_k8s.v1.charm_tracing import trace_charm
+from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
 from charms.tls_certificates_interface.v3.tls_certificates import (
     CertificateCreationRequestEvent,
     TLSCertificatesProvidesV3,
@@ -32,7 +34,6 @@ logger = logging.getLogger(__name__)
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
-
 def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
     """Return whether the certificate has the given common name."""
     loaded_certificate = x509.load_pem_x509_certificate(certificate)
@@ -43,6 +44,12 @@ def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
     return certificate_common_name == common_name
 
 
+@trace_charm(
+    tracing_endpoint="tempo_otlp_http_endpoint",
+    extra_types=(
+        TLSCertificatesProvidesV3,
+    ),
+)
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
 
@@ -50,6 +57,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Observe config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
+        self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
@@ -310,6 +318,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         else:
             for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
                 send_ca_cert.remove_certificate(relation.id)
+
+    @property
+    def tempo_otlp_http_endpoint(self) -> Optional[str]:
+        """Tempo endpoint for charm tracing."""
+        if self.tracing.is_ready():
+            return self.tracing.get_endpoint('otlp_http')
+        else:
+            return None
 
 
 def generate_password() -> str:
