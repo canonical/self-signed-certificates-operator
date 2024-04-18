@@ -1,4 +1,4 @@
-name: Integration test
+name: Integration tests
 
 on:
   workflow_call:
@@ -8,33 +8,38 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - name: Setup LXD
-        uses: canonical/setup-lxd@main
+        uses: actions/checkout@v4
+      
+      - name: Fetch Charm Under Test
+        uses: actions/download-artifact@v4
         with:
-          channel: 5.0/stable
+          name: built-charm
+          path: built/
+      
+      - name: Get Charm Under Test Path
+        id: charm-path
+        run: echo "charm_path=$(find built/ -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
+      
       - name: Setup operator environment
         uses: charmed-kubernetes/actions-operator@main
         with:
-          juju-channel: 3.4/stable
           provider: microk8s
           channel: 1.29-strict/stable
+          juju-channel: 3.4/stable
           lxd-channel: 5.20/stable
+  
       - name: Run integration tests
-        run: tox -e integration
-      - name: Archive Tested Charm
-        uses: actions/upload-artifact@v4
-        if: ${{ github.ref_name == 'main' }}
-        with:
-          name: tested-charm
-          path: .tox/**/self-signed-certificates_ubuntu-22.04-amd64.charm
-          retention-days: 5
+        run: |
+          tox -e integration -- \
+            --charm_path="${{ steps.charm-path.outputs.charm_path }}" \
+  
       - name: Archive charmcraft logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: charmcraft-logs
           path: /home/runner/.local/state/charmcraft/log/*.log
+  
       - name: Archive juju crashdump
         if: failure()
         uses: actions/upload-artifact@v4

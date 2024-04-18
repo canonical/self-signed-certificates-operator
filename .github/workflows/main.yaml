@@ -1,43 +1,47 @@
-name: Main
+name: CI
 
 on:
   pull_request:
     branches:
       - main
   push:
-  schedule:
-    - cron: '0 0 * * 0'
+    branches:
+      - main
 
 concurrency:
-    group: ${{ github.ref == 'refs/heads/main' && format('ignore-main-{0}', github.run_id) || format('{0}-{1}', github.workflow, github.ref_name) }}
-    cancel-in-progress: true
+  group: ${{ github.ref == 'refs/heads/main' && format('ignore-main-{0}', github.run_id) || format('{0}-{1}', github.workflow, github.ref_name) }}
+  cancel-in-progress: true
 
 jobs:
-  check-libraries:
-    uses: ./.github/workflows/check-libraries.yaml
-    secrets:
-      CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
-
   lint-report:
     uses: ./.github/workflows/lint-report.yaml
 
-  terraform-check:
-    uses: canonical/sdcore-github-workflows/.github/workflows/terraform.yaml@main
-
   static-analysis:
+    name: Static analysis
     uses: ./.github/workflows/static-analysis.yaml
 
   unit-tests-with-coverage:
     uses: ./.github/workflows/unit-test.yaml
+  
+  build:
+    needs:
+      - lint-report
+      - static-analysis
+      - unit-tests-with-coverage
+    uses: ./.github/workflows/build.yaml
+    secrets: inherit
 
   integration-test:
+    needs: 
+      - build
     uses: ./.github/workflows/integration-test.yaml
 
   publish-charm:
-    name: Publish Charm
     needs:
-      [lint-report, static-analysis, unit-tests-with-coverage, integration-test]
+      - lint-report
+      - static-analysis
+      - unit-tests-with-coverage
+      - integration-test
     if: ${{ github.ref_name == 'main' }}
     uses: ./.github/workflows/publish-charm.yaml
-    secrets:
-      CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
+    secrets: inherit
