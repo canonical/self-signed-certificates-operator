@@ -58,7 +58,7 @@ async def build_and_deploy(ops_test: OpsTest):
     await ops_test.model.deploy(
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
-        channel="edge",
+        channel="stable",
     )
 
 
