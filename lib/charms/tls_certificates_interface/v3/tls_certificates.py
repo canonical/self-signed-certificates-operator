@@ -282,7 +282,7 @@ import logging
 import uuid
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from ipaddress import IPv4Address
 from typing import List, Literal, Optional, Union
 
