@@ -17,6 +17,7 @@ from charms.tempo_k8s.v1.charm_tracing import trace_charm
 from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
 from charms.tls_certificates_interface.v3.tls_certificates import (
     CertificateCreationRequestEvent,
+    ProviderCertificate,
     TLSCertificatesProvidesV3,
     generate_ca,
     generate_certificate,
@@ -112,7 +113,9 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not certificates:
             event.fail("No certificates issued yet.")
             return
-        results = {"certificates": json.dumps([vars(certificate) for certificate in certificates])}
+        results = {"certificates": json.dumps(
+            [vars(certificate) for certificate in certificates],
+            default=ProviderCertificate.datetime_encoder,)}
         event.set_results(results)
 
     @property
@@ -280,6 +283,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             ca=ca_certificate_secret_content["ca-certificate"],
             chain=[ca_certificate_secret_content["ca-certificate"], certificate],
             relation_id=relation_id,
+            recommended_expiry_notification_time = 1440
         )
         logger.info("Generated certificate for relation %s", relation_id)
 

@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+from datetime import datetime, timedelta
 import json
 import unittest
 from unittest.mock import Mock, patch
@@ -199,6 +200,7 @@ class TestCharm(unittest.TestCase):
             ca=ca,
             chain=[ca, generated_certificate],
             relation_id=relation_id,
+            recommended_expiry_notification_time = 1440
         )
 
     def test_given_invalid_config_when_certificate_request_then_status_is_blocked(self):
@@ -304,6 +306,7 @@ class TestCharm(unittest.TestCase):
             chain=[ca_certificate, certificate],
             relation_id=relation_id,
             certificate_signing_request=certificate_signing_request,
+            recommended_expiry_notification_time = 1440
         )
 
     @patch("charm.certificate_has_common_name")
@@ -362,9 +365,13 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(e.exception.message, "No certificates issued yet.")
 
+    @patch(f"{TLS_LIB_PATH}.x509.load_pem_x509_certificate")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
         self,
+        patch_load_pem_x509_certificate,
     ):
+        expiry_time = datetime.now() + timedelta(days=365)  # noqa: E501
+        patch_load_pem_x509_certificate.return_value.not_valid_after_utc = expiry_time 
         self.harness.set_leader(is_leader=True)
         relation_id = self.harness.add_relation(
             relation_name="certificates", remote_app="tls-requirer"
@@ -377,6 +384,7 @@ class TestCharm(unittest.TestCase):
             ca="whatever ca",
             chain=["whatever cert 1", "whatever cert 2"],
             relation_id=relation_id,
+            recommended_expiry_notification_time = 1440
         )
 
 
@@ -393,6 +401,8 @@ class TestCharm(unittest.TestCase):
                         "ca": "whatever ca",
                         "chain": ["whatever cert 1", "whatever cert 2"],
                         "revoked": False,
+                        "expiry_time": expiry_time.isoformat(),
+                        "expiry_notification_time": 1440
                     }
                 ]
             ),
