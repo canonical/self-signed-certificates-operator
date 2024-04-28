@@ -1,9 +1,9 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from datetime import datetime, timedelta
 import json
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import ops
@@ -371,7 +371,7 @@ class TestCharm(unittest.TestCase):
         patch_load_pem_x509_certificate,
     ):
         expiry_time = datetime.now() + timedelta(days=365)  # noqa: E501
-        patch_load_pem_x509_certificate.return_value.not_valid_after_utc = expiry_time 
+        patch_load_pem_x509_certificate.return_value.not_valid_after_utc = expiry_time
         self.harness.set_leader(is_leader=True)
         relation_id = self.harness.add_relation(
             relation_name="certificates", remote_app="tls-requirer"
