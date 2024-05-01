@@ -3,12 +3,13 @@
 
 import json
 import unittest
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import ops
 import ops.testing
 from charm import SelfSignedCertificatesCharm
-from charms.tls_certificates_interface.v3.tls_certificates import RequirerCSR
+from charms.tls_certificates_interface.v3.tls_certificates import ProviderCertificate, RequirerCSR
 from ops.model import ActiveStatus, BlockedStatus
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
@@ -362,23 +363,33 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(e.exception.message, "No certificates issued yet.")
 
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_issued_certificates")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
-        self,
+        self, patch_get_issued_certificates,
     ):
+        relation_id = 123
+        application_name = "tls-requirer"
+        csr = "whatever csr"
+        certificate = "whatever certificate"
+        ca_certificate = "whatever CA certificate"
+        chain = ["whatever cert 1", "whatever cert 2"]
+        revoked = False
+        expiry_time = datetime.now()
+        expiry_notification_time = None
         self.harness.set_leader(is_leader=True)
-        relation_id = self.harness.add_relation(
-            relation_name="certificates", remote_app="tls-requirer"
-        )
-        self.harness.add_relation_unit(relation_id=relation_id, remote_unit_name="tls-requirer/0")
-
-        self.harness.charm.tls_certificates.set_relation_certificate(  # type: ignore[reportAttributeAccessIssue]
-            certificate_signing_request="whatever csr",
-            certificate="whatever cert",
-            ca="whatever ca",
-            chain=["whatever cert 1", "whatever cert 2"],
-            relation_id=relation_id,
-        )
-
+        patch_get_issued_certificates.return_value = [
+            ProviderCertificate(
+                relation_id = relation_id,
+                application_name = application_name,
+                csr = csr,
+                certificate = certificate,
+                ca = ca_certificate,
+                chain = chain,
+                revoked = revoked,
+                expiry_time = expiry_time,
+                expiry_notification_time = expiry_notification_time,
+            )
+        ]
 
         action_output = self.harness.run_action("get-issued-certificates")
 
@@ -387,12 +398,14 @@ class TestCharm(unittest.TestCase):
                 [
                     {
                         "relation_id": relation_id,
-                        "application_name": "tls-requirer",
-                        "csr": "whatever csr",
-                        "certificate": "whatever cert",
-                        "ca": "whatever ca",
-                        "chain": ["whatever cert 1", "whatever cert 2"],
-                        "revoked": False,
+                        "application_name": application_name,
+                        "csr": csr,
+                        "certificate": certificate,
+                        "ca": ca_certificate,
+                        "chain": chain,
+                        "revoked": revoked,
+                        "expiry_time": expiry_time.isoformat(),
+                        "expiry_notification_time": expiry_notification_time,
                     }
                 ]
             ),

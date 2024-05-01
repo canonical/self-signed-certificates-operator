@@ -112,7 +112,11 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not certificates:
             event.fail("No certificates issued yet.")
             return
-        results = {"certificates": json.dumps([vars(certificate) for certificate in certificates])}
+        results = {
+            "certificates": json.dumps(
+                [json.loads(certificate.to_json()) for certificate in certificates]
+            )
+        }
         event.set_results(results)
 
     @property
