@@ -1,6 +1,31 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+name: self-signed-certificates
+
+summary: An operator to provide self-signed X.509 certificates to your charms.
+
+description: |
+  An operator to provide self-signed X.509 certificates to your charms.
+
+  This charm relies on the `tls-certificates` charm relation interface. When a requirer charm
+  inserts a Certificate Signing Request in its unit databag, the
+  `self-signed-certificates-operator` will read it, generate a self-signed X.509 certificates and
+  inserts this certificate back into the relation data.
+
+  This charm is useful when developing charms or when deploying charms in non-production environment.
+links:
+  documentation: https://discourse.charmhub.io/t/self-signed-x-509-certificates-documentation/11591
+  website:
+    - https://charmhub.io/self-signed-certificates
+  source:
+    - https://github.com/canonical/self-signed-certificates-operator
+  issues:
+    - https://github.com/canonical/self-signed-certificates-operator/issues
+
+assumes:
+  - juju >= 3.1
+
 type: charm
 bases:
   - build-on:
@@ -32,3 +57,38 @@ parts:
       - libssl-dev
       - pkg-config
       - rustc
+
+provides:
+  certificates:
+    interface: tls-certificates
+  send-ca-cert:
+    interface: certificate_transfer
+    description: |
+      Send our CA certificate so clients can trust the CA by means of forming a relation.
+
+requires:
+  tracing:
+    interface: tracing
+    limit: 1
+
+config:
+  options:
+    ca-common-name:
+      type: string
+      default: self-signed-certificates-operator
+      description: Common name to be used by the Certificate Authority.
+    root-ca-validity:
+      type: int
+      default: 365
+      description: RootCA certificate validity (in days).
+    certificate-validity:
+      type: int
+      default: 365
+      description: Certificate validity (in days).
+
+actions:
+  get-ca-certificate:
+    description: Outputs the CA cert.
+
+  get-issued-certificates:
+    description: Outputs the certificates issued by the charm.

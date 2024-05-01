@@ -1,6 +1,0 @@
-get-ca-certificate:
-  description: Outputs the CA cert.
-
-get-issued-certificates:
-  description: Outputs the certificates issued by the charm.
-
