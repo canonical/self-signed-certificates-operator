@@ -394,9 +394,10 @@ class TestCharm(unittest.TestCase):
         action_output = self.harness.run_action("get-issued-certificates")
 
         expected_certificates = {
-            "certificates": json.dumps(
+            "certificates":
                 [
-                    {
+                    json.dumps(
+                        {
                         "relation_id": relation_id,
                         "application_name": application_name,
                         "csr": csr,
@@ -406,9 +407,9 @@ class TestCharm(unittest.TestCase):
                         "revoked": revoked,
                         "expiry_time": expiry_time.isoformat(),
                         "expiry_notification_time": expiry_notification_time,
-                    }
+                        }
+                    )
                 ]
-            ),
         }
 
         self.assertEqual(action_output.results, expected_certificates)
