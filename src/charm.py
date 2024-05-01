@@ -5,7 +5,6 @@
 """Self Signed X.509 Certificates."""
 
 import datetime
-import json
 import logging
 import secrets
 from typing import Optional, cast
@@ -113,9 +112,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             event.fail("No certificates issued yet.")
             return
         results = {
-            "certificates": json.dumps(
-                [json.loads(certificate.to_json()) for certificate in certificates]
-            )
+            "certificates": [certificate.to_json() for certificate in certificates]
         }
         event.set_results(results)
 
