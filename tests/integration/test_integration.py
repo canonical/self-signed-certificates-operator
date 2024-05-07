@@ -4,6 +4,7 @@
 
 
 import logging
+import platform
 import time
 from pathlib import Path
 from typing import Dict
@@ -20,6 +21,8 @@ APP_NAME = METADATA["name"]
 
 TLS_REQUIRER_CHARM_NAME = "tls-certificates-requirer"
 CA_COMMON_NAME = "example.com"
+
+ARCH = "arm64" if platform.machine() == "aarch64" else "amd64"
 
 
 async def wait_for_requirer_ca_certificate(ops_test: OpsTest, ca_common_name: str) -> None:
@@ -48,17 +51,21 @@ async def deploy(ops_test: OpsTest, request):
     """Build the charm-under-test and deploy it."""
     assert ops_test.model
     charm = Path(request.config.getoption("--charm_path")).resolve()
+    logger.info("Deploying charms for architecture: %s", ARCH)
+    await ops_test.model.set_constraints({"arch": ARCH})
     await ops_test.model.deploy(
         charm,
         application_name=APP_NAME,
         series="jammy",
         trust=True,
         config={"ca-common-name": CA_COMMON_NAME},
+        constraints={"arch": ARCH},
     )
     await ops_test.model.deploy(
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
         channel="stable",
+        constraints={"arch": ARCH},
     )
 
 
