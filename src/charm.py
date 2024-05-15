@@ -165,7 +165,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             private_key=private_key,
             subject=self._config_ca_common_name,
             private_key_password=private_key_password.encode(),
-            validity=0.1
+            validity=8
         )
         secret_content = {
             "private-key-password": private_key_password,
@@ -273,9 +273,8 @@ class SelfSignedCertificatesCharm(CharmBase):
             ca_key=ca_certificate_secret_content["private-key"].encode(),
             ca_key_password=ca_certificate_secret_content["private-key-password"].encode(),
             csr=csr.encode(),
-            validity=self._config_certificate_validity,
             is_ca=is_ca,
-            validity=0.05
+            validity=3
         ).decode()
         self.tls_certificates.set_relation_certificate(
             certificate_signing_request=csr,

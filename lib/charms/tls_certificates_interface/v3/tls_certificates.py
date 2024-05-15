@@ -802,7 +802,7 @@ def generate_ca(
         .public_key(private_key_object.public_key())  # type: ignore[arg-type]
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now(timezone.utc))
-        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=validity))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(minutes=validity))
         .add_extension(x509.SubjectKeyIdentifier(digest=subject_identifier), critical=False)
         .add_extension(
             x509.AuthorityKeyIdentifier(
@@ -957,7 +957,7 @@ def generate_certificate(
         .public_key(csr_object.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now(timezone.utc))
-        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=validity))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(minutes=validity))
     )
     extensions = get_certificate_extensions(
         authority_key_identifier=ca_pem.extensions.get_extension_for_class(
