@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 
+
 def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
     """Return whether the certificate has the given common name."""
     loaded_certificate = x509.load_pem_x509_certificate(certificate)
@@ -45,9 +46,7 @@ def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
 
 @trace_charm(
     tracing_endpoint="tempo_otlp_http_endpoint",
-    extra_types=(
-        TLSCertificatesProvidesV3,
-    ),
+    extra_types=(TLSCertificatesProvidesV3,),
 )
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
@@ -76,16 +75,18 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
 
     def _on_collect_unit_status(self, event: CollectStatusEvent):
-         """Centralized status management for the charm."""
-         if not self.unit.is_leader():
+        """Centralized status management for the charm."""
+        if not self.unit.is_leader():
             event.add_status(BlockedStatus("Scaling is not implemented for this charm"))
             return
-         if invalid_configs := self._invalid_configs():
-            event.add_status(BlockedStatus(
-                f"The following configuration values are not valid: {invalid_configs}"
-            ))
+        if invalid_configs := self._invalid_configs():
+            event.add_status(
+                BlockedStatus(
+                    f"The following configuration values are not valid: {invalid_configs}"
+                )
+            )
             return
-         event.add_status(ActiveStatus())
+        event.add_status(ActiveStatus())
 
     @property
     def _config_root_ca_certificate_validity(self) -> int:
@@ -111,9 +112,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not certificates:
             event.fail("No certificates issued yet.")
             return
-        results = {
-            "certificates": [certificate.to_json() for certificate in certificates]
-        }
+        results = {"certificates": [certificate.to_json() for certificate in certificates]}
         event.set_results(results)
 
     @property
@@ -324,7 +323,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def tempo_otlp_http_endpoint(self) -> Optional[str]:
         """Tempo endpoint for charm tracing."""
         if self.tracing.is_ready():
-            return self.tracing.get_endpoint('otlp_http')
+            return self.tracing.get_endpoint("otlp_http")
         else:
             return None
 

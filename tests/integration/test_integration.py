@@ -97,6 +97,7 @@ async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_i
     )
     await wait_for_requirer_ca_certificate(ops_test=ops_test, ca_common_name=CA_COMMON_NAME)
 
+
 async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_changed_then_new_certificate_is_provided(  # noqa: E501
     ops_test: OpsTest,
     deploy,

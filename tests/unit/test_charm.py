@@ -145,7 +145,7 @@ class TestCharm(unittest.TestCase):
 
         self.harness.update_config(key_values=key_values)
 
-        secret =self.harness.model.get_secret(label="ca-certificates")
+        secret = self.harness.model.get_secret(label="ca-certificates")
         secret_content = secret.get_content(refresh=True)
         assert secret_content["ca-certificate"] == new_ca
 
@@ -365,7 +365,8 @@ class TestCharm(unittest.TestCase):
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_issued_certificates")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
-        self, patch_get_issued_certificates,
+        self,
+        patch_get_issued_certificates,
     ):
         relation_id = 123
         application_name = "tls-requirer"
@@ -379,25 +380,24 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         patch_get_issued_certificates.return_value = [
             ProviderCertificate(
-                relation_id = relation_id,
-                application_name = application_name,
-                csr = csr,
-                certificate = certificate,
-                ca = ca_certificate,
-                chain = chain,
-                revoked = revoked,
-                expiry_time = expiry_time,
-                expiry_notification_time = expiry_notification_time,
+                relation_id=relation_id,
+                application_name=application_name,
+                csr=csr,
+                certificate=certificate,
+                ca=ca_certificate,
+                chain=chain,
+                revoked=revoked,
+                expiry_time=expiry_time,
+                expiry_notification_time=expiry_notification_time,
             )
         ]
 
         action_output = self.harness.run_action("get-issued-certificates")
 
         expected_certificates = {
-            "certificates":
-                [
-                    json.dumps(
-                        {
+            "certificates": [
+                json.dumps(
+                    {
                         "relation_id": relation_id,
                         "application_name": application_name,
                         "csr": csr,
@@ -407,9 +407,9 @@ class TestCharm(unittest.TestCase):
                         "revoked": revoked,
                         "expiry_time": expiry_time.isoformat(),
                         "expiry_notification_time": expiry_notification_time,
-                        }
-                    )
-                ]
+                    }
+                )
+            ]
         }
 
         self.assertEqual(action_output.results, expected_certificates)
