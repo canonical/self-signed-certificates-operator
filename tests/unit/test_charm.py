@@ -9,10 +9,17 @@ from unittest.mock import Mock, patch
 import ops
 import ops.testing
 from charm import SelfSignedCertificatesCharm
-from charms.tls_certificates_interface.v3.tls_certificates import ProviderCertificate, RequirerCSR
+from charms.tls_certificates_interface.v4.tls_certificates import (
+    Certificate,
+    CertificateSigningRequest,
+    ProviderCertificate,
+    RequirerCSR,
+)
 from ops.model import ActiveStatus, BlockedStatus
 
-TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
+from tests.unit.certificates import generate_csr, generate_private_key
+
+TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
 
 
 class TestCharm(unittest.TestCase):
@@ -70,7 +77,7 @@ class TestCharm(unittest.TestCase):
             private_key_string,
         )
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.revoke_all_certificates")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
@@ -150,8 +157,8 @@ class TestCharm(unittest.TestCase):
         assert secret_content["ca-certificate"] == new_ca
 
     @patch("charm.certificate_has_common_name")
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_outstanding_certificate_requests")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
     @patch("charm.generate_certificate")
     def test_given_outstanding_certificate_requests_when_secret_changed_then_certificates_are_generated(  # noqa: E501
         self,
@@ -164,7 +171,6 @@ class TestCharm(unittest.TestCase):
         private_key_password = "whatever"
         ca = "whatever CA certificate"
         requirer_csr = "whatever CSR"
-        requirer_is_ca = False
         generated_certificate = "whatever certificate"
         patch_certificate_has_common_name.return_value = True
         self.harness.set_leader(is_leader=True)
@@ -175,10 +181,7 @@ class TestCharm(unittest.TestCase):
         patch_get_outstanding_certificate_requests.return_value = [
             RequirerCSR(
                 relation_id=relation_id,
-                application_name="tls-requirer",
-                unit_name="tls-requirer/0",
-                csr=requirer_csr,
-                is_ca=requirer_is_ca,
+                certificate_signing_request=CertificateSigningRequest.from_string(requirer_csr),
             ),
         ]
         patch_generate_certificate.return_value = generated_certificate.encode()
@@ -259,7 +262,7 @@ class TestCharm(unittest.TestCase):
             private_key_string,
         )
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch("charm.generate_certificate")
     def test_given_root_certificates_when_certificate_request_then_certificates_are_generated(
         self, patch_generate_certificate, patch_set_certificate
@@ -363,14 +366,15 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(e.exception.message, "No certificates issued yet.")
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.get_issued_certificates")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_issued_certificates")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
         self,
         patch_get_issued_certificates,
     ):
         relation_id = 123
         application_name = "tls-requirer"
-        csr = "whatever csr"
+        private_key = generate_private_key()
+        csr = generate_csr(private_key=private_key, common_name="example.com")
         certificate = "whatever certificate"
         ca_certificate = "whatever CA certificate"
         chain = ["whatever cert 1", "whatever cert 2"]
@@ -380,15 +384,11 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         patch_get_issued_certificates.return_value = [
             ProviderCertificate(
-                relation_id=relation_id,
-                application_name=application_name,
-                csr=csr,
-                certificate=certificate,
-                ca=ca_certificate,
-                chain=chain,
+                certificate_signing_request=CertificateSigningRequest.from_string(csr),
+                certificate=Certificate.from_string(certificate),
+                ca=Certificate.from_string(ca_certificate),
+                chain=[Certificate.from_string(c) for c in chain],
                 revoked=revoked,
-                expiry_time=expiry_time,
-                expiry_notification_time=expiry_notification_time,
             )
         ]
 

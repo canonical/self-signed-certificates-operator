@@ -9,17 +9,17 @@ import logging
 import secrets
 from typing import Optional, cast
 
+from certificates import generate_ca, generate_certificate, generate_private_key
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
 from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
-from charms.tls_certificates_interface.v3.tls_certificates import (
-    CertificateCreationRequestEvent,
-    TLSCertificatesProvidesV3,
-    generate_ca,
-    generate_certificate,
-    generate_private_key,
+from charms.tls_certificates_interface.v4.tls_certificates import (
+    Certificate,
+    CertificateSigningRequest,
+    ProviderCertificate,
+    TLSCertificatesProvidesV4,
 )
 from cryptography import x509
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoinedEvent
@@ -46,7 +46,7 @@ def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
 
 @trace_charm(
     tracing_endpoint="tempo_otlp_http_endpoint",
-    extra_types=(TLSCertificatesProvidesV3,),
+    extra_types=(TLSCertificatesProvidesV4,),
 )
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
@@ -54,17 +54,14 @@ class SelfSignedCertificatesCharm(CharmBase):
     def __init__(self, *args):
         """Observe config change and certificate request events."""
         super().__init__(*args)
-        self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
+        self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.secret_expired, self._configure)
         self.framework.observe(self.on.secret_changed, self._configure)
-        self.framework.observe(
-            self.tls_certificates.on.certificate_creation_request,
-            self._on_certificate_creation_request,
-        )
+        self.framework.observe(self.on.certificates_relation_changed, self._configure)
         self.framework.observe(self.on.get_ca_certificate_action, self._on_get_ca_certificate)
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
@@ -214,8 +211,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Process outstanding certificate requests."""
         for request in self.tls_certificates.get_outstanding_certificate_requests():
             self._generate_self_signed_certificate(
-                csr=request.csr,
-                is_ca=request.is_ca,
+                csr=str(request.certificate_signing_request),
+                is_ca=request.certificate_signing_request.is_ca,
                 relation_id=request.relation_id,
             )
 
@@ -233,28 +230,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not self._config_certificate_validity:
             invalid_configs.append("certificate-validity")
         return invalid_configs
-
-    def _on_certificate_creation_request(self, event: CertificateCreationRequestEvent) -> None:
-        """Handle certificate requests.
-
-        Args:
-            event (CertificateCreationRequestEvent): Juju event
-        """
-        if not self.unit.is_leader():
-            return
-        if self._invalid_configs():
-            logger.warning("Invalid configuration. Certificate cannot be generated.")
-            return
-        if not self._root_certificate_is_stored:
-            logger.warning(
-                "Root certificate is not yet generated. Certificate cannot be generated."
-            )
-            return
-        self._generate_self_signed_certificate(
-            csr=event.certificate_signing_request,
-            is_ca=event.is_ca,
-            relation_id=event.relation_id,
-        )
 
     def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int) -> None:
         """Generate self-signed certificate.
@@ -275,10 +250,15 @@ class SelfSignedCertificatesCharm(CharmBase):
             is_ca=is_ca,
         ).decode()
         self.tls_certificates.set_relation_certificate(
-            certificate_signing_request=csr,
-            certificate=certificate,
-            ca=ca_certificate_secret_content["ca-certificate"],
-            chain=[ca_certificate_secret_content["ca-certificate"], certificate],
+            provider_certificate=ProviderCertificate(
+                certificate=Certificate.from_string(certificate),
+                certificate_signing_request=CertificateSigningRequest.from_string(csr),
+                ca=Certificate.from_string(ca_certificate_secret_content["ca-certificate"]),
+                chain=[
+                    Certificate.from_string(ca_certificate_secret_content["ca-certificate"]),
+                    Certificate.from_string(certificate),
+                ],
+            ),
             relation_id=relation_id,
         )
         logger.info("Generated certificate for relation %s", relation_id)
