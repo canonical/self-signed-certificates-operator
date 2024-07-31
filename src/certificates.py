@@ -18,19 +18,17 @@ logger = logging.getLogger(__name__)
 
 
 def generate_private_key(
-    password: Optional[bytes] = None,
     key_size: int = 2048,
     public_exponent: int = 65537,
-) -> bytes:
+) -> str:
     """Generate a private key.
 
     Args:
-        password (bytes): Password for decrypting the private key
         key_size (int): Key size in bytes
         public_exponent: Public exponent.
 
     Returns:
-        bytes: Private Key
+        str: Private Key
     """
     private_key = rsa.generate_private_key(
         public_exponent=public_exponent,
@@ -39,13 +37,9 @@ def generate_private_key(
     key_bytes = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=(
-            serialization.BestAvailableEncryption(password)
-            if password
-            else serialization.NoEncryption()
-        ),
+        encryption_algorithm=serialization.NoEncryption(),
     )
-    return key_bytes
+    return key_bytes.decode().strip()
 
 
 def get_certificate_extensions(
@@ -148,33 +142,31 @@ def get_certificate_extensions(
 
 
 def generate_certificate(
-    csr: bytes,
-    ca: bytes,
-    ca_key: bytes,
-    ca_key_password: Optional[bytes] = None,
+    csr: str,
+    ca: str,
+    ca_key: str,
     validity: int = 365,
     alt_names: Optional[List[str]] = None,
     is_ca: bool = False,
-) -> bytes:
+) -> str:
     """Generate a TLS certificate based on a CSR.
 
     Args:
-        csr (bytes): CSR
-        ca (bytes): CA Certificate
-        ca_key (bytes): CA private key
-        ca_key_password: CA private key password
+        csr (str): CSR
+        ca (str): CA Certificate
+        ca_key (str): CA private key
         validity (int): Certificate validity (in days)
         alt_names (list): List of alt names to put on cert - prefer putting SANs in CSR
         is_ca (bool): Whether the certificate is a CA certificate
 
     Returns:
-        bytes: Certificate
+        str: Certificate
     """
-    csr_object = x509.load_pem_x509_csr(csr)
+    csr_object = x509.load_pem_x509_csr(csr.encode())
     subject = csr_object.subject
-    ca_pem = x509.load_pem_x509_certificate(ca)
+    ca_pem = x509.load_pem_x509_certificate(ca.encode())
     issuer = ca_pem.issuer
-    private_key = serialization.load_pem_private_key(ca_key, password=ca_key_password)
+    private_key = serialization.load_pem_private_key(ca_key.encode(), password=None)
 
     certificate_builder = (
         x509.CertificateBuilder()
@@ -203,30 +195,29 @@ def generate_certificate(
             logger.warning("Failed to add extension %s: %s", extension.oid, e)
 
     cert = certificate_builder.sign(private_key, hashes.SHA256())  # type: ignore[arg-type]
-    return cert.public_bytes(serialization.Encoding.PEM)
+    return cert.public_bytes(serialization.Encoding.PEM).decode().strip()
 
 
 def generate_ca(
-    private_key: bytes,
+    private_key: str,
     subject: str,
-    private_key_password: Optional[bytes] = None,
     validity: int = 365,
     country: str = "US",
-) -> bytes:
+) -> str:
     """Generate a CA Certificate.
 
     Args:
         private_key (bytes): Private key
         subject (str): Common Name that can be an IP or a Full Qualified Domain Name (FQDN).
-        private_key_password (bytes): Private key password
         validity (int): Certificate validity time (in days)
         country (str): Certificate Issuing country
 
     Returns:
-        bytes: CA Certificate.
+        str: CA Certificate.
     """
     private_key_object = serialization.load_pem_private_key(
-        private_key, password=private_key_password
+        private_key.encode(),
+        password=None,
     )
     subject_name = x509.Name(
         [
@@ -273,4 +264,4 @@ def generate_ca(
         )
         .sign(private_key_object, hashes.SHA256())  # type: ignore[arg-type]
     )
-    return cert.public_bytes(serialization.Encoding.PEM)
+    return cert.public_bytes(serialization.Encoding.PEM).decode().strip()

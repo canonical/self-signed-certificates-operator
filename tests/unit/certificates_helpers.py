@@ -39,14 +39,14 @@ def generate_private_key(
 def generate_csr(
     private_key: str,
     common_name: str,
-    sans: Optional[List[str]] = None,
+    sans_dns: Optional[List[str]] = None,
 ) -> str:
     """Generate a CSR using private key and subject.
 
     Args:
         private_key (str): Private key
         common_name (str): CSR common name.
-        sans (list): List of subject alternative names
+        sans_dns (list): List of subject alternative names
 
     Returns:
         str: CSR
@@ -58,10 +58,12 @@ def generate_csr(
         x509.NameAttribute(x509.NameOID.X500_UNIQUE_IDENTIFIER, str(unique_identifier))
     )
     csr = x509.CertificateSigningRequestBuilder(subject_name=x509.Name(subject_name))
-    if sans:
-        csr.add_extension(
-            x509.SubjectAlternativeName([x509.DNSName(san) for san in sans]), critical=False
-        )
+
+    _sans: List[x509.GeneralName] = []
+    if sans_dns:
+        _sans.extend([x509.DNSName(san) for san in sans_dns])
+    if _sans:
+        csr = csr.add_extension(x509.SubjectAlternativeName(set(_sans)), critical=False)
     signed_certificate = csr.sign(signing_key, hashes.SHA256())  # type: ignore[arg-type]
     return signed_certificate.public_bytes(serialization.Encoding.PEM).decode().strip()
 

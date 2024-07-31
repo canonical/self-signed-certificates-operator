@@ -6,7 +6,6 @@
 
 import datetime
 import logging
-import secrets
 from typing import Optional, cast
 
 from certificates import generate_ca, generate_certificate, generate_private_key
@@ -155,17 +154,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
-        private_key_password = generate_password()
-        private_key = generate_private_key(password=private_key_password.encode())
+        private_key = generate_private_key()
         ca_certificate = generate_ca(
             private_key=private_key,
             subject=self._config_ca_common_name,
-            private_key_password=private_key_password.encode(),
         )
         secret_content = {
-            "private-key-password": private_key_password,
-            "private-key": private_key.decode(),
-            "ca-certificate": ca_certificate.decode(),
+            "private-key": private_key,
+            "ca-certificate": ca_certificate,
         }
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
@@ -242,13 +238,12 @@ class SelfSignedCertificatesCharm(CharmBase):
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         certificate = generate_certificate(
-            ca=ca_certificate_secret_content["ca-certificate"].encode(),
-            ca_key=ca_certificate_secret_content["private-key"].encode(),
-            ca_key_password=ca_certificate_secret_content["private-key-password"].encode(),
-            csr=csr.encode(),
+            ca=ca_certificate_secret_content["ca-certificate"],
+            ca_key=ca_certificate_secret_content["private-key"],
+            csr=csr,
             validity=self._config_certificate_validity,
             is_ca=is_ca,
-        ).decode()
+        )
         self.tls_certificates.set_relation_certificate(
             provider_certificate=ProviderCertificate(
                 certificate=Certificate.from_string(certificate),
@@ -306,15 +301,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             return self.tracing.get_endpoint("otlp_http")
         else:
             return None
-
-
-def generate_password() -> str:
-    """Generate a random string containing 64 bytes.
-
-    Returns:
-        str: Password
-    """
-    return secrets.token_hex(64)
 
 
 if __name__ == "__main__":
