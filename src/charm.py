@@ -13,7 +13,7 @@ from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
-from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
+from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer, charm_tracing_config
 from charms.tls_certificates_interface.v3.tls_certificates import (
     CertificateCreationRequestEvent,
     TLSCertificatesProvidesV3,
@@ -45,17 +45,23 @@ def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
 
 
 @trace_charm(
-    tracing_endpoint="tempo_otlp_http_endpoint",
+    tracing_endpoint="_tracing_endpoint",
+    server_cert="_tracing_server_cert",
     extra_types=(TLSCertificatesProvidesV3,),
 )
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
+    _server_ca_cert_path = "/path/to/some/ca-cert.crt"
 
     def __init__(self, *args):
         """Observe config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
+        self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
+            self.tracing, self._server_ca_cert_path
+        )
+
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
@@ -318,14 +324,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         else:
             for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
                 send_ca_cert.remove_certificate(relation.id)
-
-    @property
-    def tempo_otlp_http_endpoint(self) -> Optional[str]:
-        """Tempo endpoint for charm tracing."""
-        if self.tracing.is_ready():
-            return self.tracing.get_endpoint("otlp_http")
-        else:
-            return None
 
 
 def generate_password() -> str:
