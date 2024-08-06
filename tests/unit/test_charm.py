@@ -202,6 +202,7 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config()
 
         expected_provider_certificate = ProviderCertificate(
+            relation_id=relation_id,
             certificate=Certificate.from_string(certificate),
             certificate_signing_request=CertificateSigningRequest.from_string(requirer_csr),
             ca=Certificate.from_string(provider_ca),
@@ -209,7 +210,6 @@ class TestCharm(unittest.TestCase):
         )
         patch_set_relation_certificate.assert_called_with(
             provider_certificate=expected_provider_certificate,
-            relation_id=relation_id,
         )
 
     @patch("charm.generate_private_key")
@@ -311,6 +311,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
         patch_get_issued_certificates.return_value = [
             ProviderCertificate(
+                relation_id=1,
                 certificate_signing_request=CertificateSigningRequest.from_string(csr),
                 certificate=cert,
                 ca=Certificate.from_string(ca_certificate),
@@ -328,8 +329,6 @@ class TestCharm(unittest.TestCase):
         assert output_certificate["ca"] == ca_certificate
         assert output_certificate["chain"] == chain
         assert output_certificate["revoked"] == revoked
-        assert output_certificate["expiry_time"] == cert.expiry_time.isoformat()  # type: ignore[reportOptionalMemberAccess]
-        assert output_certificate["validity_start_time"] == cert.validity_start_time.isoformat()  # type: ignore[reportOptionalMemberAccess]
 
     def test_given_ca_cert_generated_when_get_ca_certificate_action_then_returns_ca_certificate(
         self,

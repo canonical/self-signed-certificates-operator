@@ -246,6 +246,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
         self.tls_certificates.set_relation_certificate(
             provider_certificate=ProviderCertificate(
+                relation_id=relation_id,
                 certificate=Certificate.from_string(certificate),
                 certificate_signing_request=CertificateSigningRequest.from_string(csr),
                 ca=Certificate.from_string(ca_certificate_secret_content["ca-certificate"]),
@@ -254,7 +255,6 @@ class SelfSignedCertificatesCharm(CharmBase):
                     Certificate.from_string(certificate),
                 ],
             ),
-            relation_id=relation_id,
         )
         logger.info("Generated certificate for relation %s", relation_id)
 
