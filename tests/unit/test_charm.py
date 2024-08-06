@@ -4,7 +4,8 @@
 import json
 import unittest
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, mock_open
+
 
 import ops
 import ops.testing
@@ -13,6 +14,7 @@ from charms.tls_certificates_interface.v3.tls_certificates import ProviderCertif
 from ops.model import ActiveStatus, BlockedStatus
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
+CA_CERT_PATH = "/var/certs/ca-cert.pem"
 
 
 class TestCharm(unittest.TestCase):
@@ -21,6 +23,12 @@ class TestCharm(unittest.TestCase):
         self.addCleanup(self.harness.cleanup)
         self.harness.set_leader(is_leader=True)
         self.harness.begin()
+        self.mock_open = mock_open()
+        self.patcher = patch('builtins.open', self.mock_open)
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def test_given_invalid_config_when_config_changed_then_status_is_blocked(self):
         key_values = {"ca-common-name": "", "certificate-validity": 100}
@@ -42,6 +50,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
+        self.harness.add_storage(storage_name="certs", attach=True)
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         private_key_password = "banana"
@@ -70,6 +79,32 @@ class TestCharm(unittest.TestCase):
             private_key_string,
         )
 
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_password")
+    @patch("charm.generate_ca")
+    def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(
+        self,
+        patch_generate_ca,
+        patch_generate_password,
+        patch_generate_private_key,
+    ):
+        self.harness.add_storage(storage_name="certs", attach=True)
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        private_key_password = "banana"
+        ca_certificate_bytes = ca_certificate_string.encode()
+        private_key_bytes = private_key_string.encode()
+        patch_generate_ca.return_value = ca_certificate_bytes
+        patch_generate_password.return_value = private_key_password
+        patch_generate_private_key.return_value = private_key_bytes
+        key_values = {"ca-common-name": "pizza.com", "certificate-validity": 100}
+        self.harness.set_leader(is_leader=True)
+
+        self.harness.update_config(key_values=key_values)
+        # TODO
+        root = self.harness.get_filesystem_root(self.container_name)
+        self.assertEqual((CA_CERT_PATH).read_text(), ca_certificate_string)
+
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.revoke_all_certificates")
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
@@ -81,6 +116,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key,
         patch_revoke_all_certificates,
     ):
+        self.harness.add_storage(storage_name="certs", attach=True)
         patch_generate_ca.return_value = b"whatever CA certificate"
         patch_generate_password.return_value = "password"
         patch_generate_private_key.return_value = b"whatever private key"
@@ -100,6 +136,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
+        self.harness.add_storage(storage_name="certs", attach=True)
         patch_generate_ca.return_value = b"whatever CA certificate"
         patch_generate_password.return_value = "password"
         patch_generate_private_key.return_value = b"whatever private key"
@@ -226,6 +263,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
+        self.harness.add_storage(storage_name="certs", attach=True)
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         private_key_password = "banana"
@@ -318,6 +356,7 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key,
         patch_certificate_has_common_name,
     ):
+        self.harness.add_storage(storage_name="certs", attach=True)
         patch_certificate_has_common_name.return_value = False
         initial_common_name = "common-name-initial.com"
         new_common_name = "common-name-new.com"
