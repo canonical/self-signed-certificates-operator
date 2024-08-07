@@ -191,12 +191,12 @@ def test_given_certificate_created_when_generate_certificate_then_verify_public_
 
 
 def test_given_request_is_for_ca_certificate_when_generate_certificate_then_certificate_is_generated():  # noqa: E501
-    ca_private_key = generate_private_key()
+    ca_private_key = generate_private_key_helper()
     ca = generate_ca(
         private_key=ca_private_key,
         subject="my.demo.ca",
     )
-    server_private_key = generate_private_key()
+    server_private_key = generate_private_key_helper()
 
     server_csr = generate_csr_helper(
         private_key=server_private_key,
