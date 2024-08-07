@@ -4,8 +4,7 @@
 import json
 import unittest
 from datetime import datetime
-from unittest.mock import Mock, patch, mock_open
-
+from unittest.mock import Mock, mock_open, patch
 
 import ops
 import ops.testing
@@ -22,9 +21,10 @@ class TestCharm(unittest.TestCase):
         self.harness = ops.testing.Harness(SelfSignedCertificatesCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.set_leader(is_leader=True)
+        self.harness.add_storage(storage_name="certs", attach=True)
         self.harness.begin()
         self.mock_open = mock_open()
-        self.patcher = patch('builtins.open', self.mock_open)
+        self.patcher = patch("builtins.open", self.mock_open)
         self.patcher.start()
 
     def tearDown(self):
@@ -50,7 +50,6 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         private_key_password = "banana"
@@ -82,13 +81,12 @@ class TestCharm(unittest.TestCase):
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
     @patch("charm.generate_ca")
-    def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(
+    def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(  # noqa: E501
         self,
         patch_generate_ca,
         patch_generate_password,
         patch_generate_private_key,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         private_key_password = "banana"
@@ -101,9 +99,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_leader(is_leader=True)
 
         self.harness.update_config(key_values=key_values)
-        # TODO
-        root = self.harness.get_filesystem_root(self.container_name)
-        self.assertEqual((CA_CERT_PATH).read_text(), ca_certificate_string)
+        self.mock_open.return_value.write.assert_called_with(ca_certificate_string)
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.revoke_all_certificates")
     @patch("charm.generate_private_key")
@@ -116,7 +112,6 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key,
         patch_revoke_all_certificates,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         patch_generate_ca.return_value = b"whatever CA certificate"
         patch_generate_password.return_value = "password"
         patch_generate_private_key.return_value = b"whatever private key"
@@ -136,7 +131,6 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         patch_generate_ca.return_value = b"whatever CA certificate"
         patch_generate_password.return_value = "password"
         patch_generate_private_key.return_value = b"whatever private key"
@@ -263,7 +257,6 @@ class TestCharm(unittest.TestCase):
         patch_generate_password,
         patch_generate_private_key,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         private_key_password = "banana"
@@ -356,7 +349,6 @@ class TestCharm(unittest.TestCase):
         patch_generate_private_key,
         patch_certificate_has_common_name,
     ):
-        self.harness.add_storage(storage_name="certs", attach=True)
         patch_certificate_has_common_name.return_value = False
         initial_common_name = "common-name-initial.com"
         new_common_name = "common-name-new.com"

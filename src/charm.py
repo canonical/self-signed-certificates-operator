@@ -330,14 +330,14 @@ class SelfSignedCertificatesCharm(CharmBase):
                 send_ca_cert.remove_certificate(relation.id)
 
     def _push_ca_cert_to_container(self, ca_certificate: str):
-        """Stores the CA certificate in the charm container.
-        
+        """Store the CA certificate in the charm container.
+
         Args:
             ca_certificate: PEM String of the CA cert.
         """
-        location = self.model.storages['certs'][0].location
+        location = self.model.storages["certs"][0].location
         fpath = os.path.join(location, CA_CERT_FILENAME)
-        with open(fpath, 'w') as f:
+        with open(fpath, "w") as f:
             f.write(ca_certificate)
 
 

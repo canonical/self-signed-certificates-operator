@@ -2,10 +2,10 @@
 # See LICENSE file for licensing details.
 
 import unittest
+from unittest.mock import mock_open, patch
 
 import ops
 import ops.testing
-from unittest.mock import patch, mock_open
 from charm import CA_CERTIFICATES_SECRET_LABEL, SelfSignedCertificatesCharm
 
 
@@ -14,8 +14,9 @@ class TestSendCaCert(unittest.TestCase):
         self.harness = ops.testing.Harness(SelfSignedCertificatesCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.set_leader(is_leader=True)
+        self.harness.add_storage(storage_name="certs", attach=True)
         self.mock_open = mock_open()
-        self.patcher = patch('builtins.open', self.mock_open)
+        self.patcher = patch("builtins.open", self.mock_open)
         self.patcher.start()
         self.harness.begin_with_initial_hooks()
 
@@ -23,7 +24,6 @@ class TestSendCaCert(unittest.TestCase):
         self.patcher.stop()
 
     def test_when_relation_join_then_ca_cert_is_advertised(self):
-        self.harness.add_storage(storage_name="certs", attach=True)
         # Add a few apps
         apps = ["traefik", "another"]
         rel_ids = [
