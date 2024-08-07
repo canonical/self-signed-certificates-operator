@@ -7,7 +7,7 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List
 
 from cryptography import x509
 from cryptography.hazmat._oid import ExtensionOID
@@ -45,7 +45,6 @@ def generate_private_key(
 def get_certificate_extensions(
     authority_key_identifier: bytes,
     csr: x509.CertificateSigningRequest,
-    alt_names: Optional[List[str]],
     is_ca: bool,
 ) -> List[x509.Extension]:
     """Generate a list of certificate extensions from a CSR and other known information.
@@ -53,7 +52,6 @@ def get_certificate_extensions(
     Args:
         authority_key_identifier (bytes): Authority key identifier
         csr (x509.CertificateSigningRequest): CSR
-        alt_names (list): List of alt names to put on cert - prefer putting SANs in CSR
         is_ca (bool): Whether the certificate is a CA certificate
 
     Returns:
@@ -80,10 +78,7 @@ def get_certificate_extensions(
             value=x509.BasicConstraints(ca=is_ca, path_length=None),
         ),
     ]
-
     sans: List[x509.GeneralName] = []
-    san_alt_names = [x509.DNSName(name) for name in alt_names] if alt_names else []
-    sans.extend(san_alt_names)
     try:
         loaded_san_ext = csr.extensions.get_extension_for_class(x509.SubjectAlternativeName)
         sans.extend(
@@ -146,7 +141,6 @@ def generate_certificate(
     ca: str,
     ca_key: str,
     validity: int = 365,
-    alt_names: Optional[List[str]] = None,
     is_ca: bool = False,
 ) -> str:
     """Generate a TLS certificate based on a CSR.
@@ -156,7 +150,6 @@ def generate_certificate(
         ca (str): CA Certificate
         ca_key (str): CA private key
         validity (int): Certificate validity (in days)
-        alt_names (list): List of alt names to put on cert - prefer putting SANs in CSR
         is_ca (bool): Whether the certificate is a CA certificate
 
     Returns:
@@ -182,7 +175,6 @@ def generate_certificate(
             x509.SubjectKeyIdentifier
         ).value.key_identifier,
         csr=csr_object,
-        alt_names=alt_names,
         is_ca=is_ca,
     )
     for extension in extensions:
