@@ -142,7 +142,7 @@ def test_given_csr_and_ca_when_generate_certificate_then_certificate_is_generate
     assert result_sans_dns == sorted(set(sans))
 
 
-def test_given_basic_constraint_is_false_when_generate_ca_then_extensions_are_correctly_populated():  # noqa: E501
+def test_given_private_key_when_generate_ca_then_basic_constraints_extension_is_correctly_populated():  # noqa: E501
     subject = "whatever.ca.subject"
     private_key = generate_private_key_helper()
 
