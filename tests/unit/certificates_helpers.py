@@ -17,7 +17,6 @@ def generate_private_key(
     """Generate a private key.
 
     Args:
-        password (bytes): Password for decrypting the private key
         key_size (int): Key size in bytes
         public_exponent: Public exponent.
 
@@ -126,7 +125,6 @@ def generate_ca(
 
     Args:
         private_key (bytes): Private key
-        private_key_password (bytes): Private key password
         common_name (str): Certificate common name.
         validity (int): Certificate validity time (in days)
         country (str): Certificate Issuing country
