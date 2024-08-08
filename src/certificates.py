@@ -42,7 +42,7 @@ def generate_private_key(
     return key_bytes.decode().strip()
 
 
-def get_certificate_extensions(
+def get_certificate_request_extensions(
     authority_key_identifier: bytes,
     csr: x509.CertificateSigningRequest,
     is_ca: bool,
@@ -170,7 +170,7 @@ def generate_certificate(
         .not_valid_before(datetime.now(timezone.utc))
         .not_valid_after(datetime.now(timezone.utc) + timedelta(days=validity))
     )
-    extensions = get_certificate_extensions(
+    extensions = get_certificate_request_extensions(
         authority_key_identifier=ca_pem.extensions.get_extension_for_class(
             x509.SubjectKeyIdentifier
         ).value.key_identifier,
