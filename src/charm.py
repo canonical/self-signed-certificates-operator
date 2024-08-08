@@ -8,7 +8,12 @@ import datetime
 import logging
 from typing import Optional, cast
 
-from certificates import generate_ca, generate_certificate, generate_private_key
+from certificates import (
+    certificate_has_common_name,
+    generate_ca,
+    generate_certificate,
+    generate_private_key,
+)
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
@@ -20,7 +25,6 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
     ProviderCertificate,
     TLSCertificatesProvidesV4,
 )
-from cryptography import x509
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoinedEvent
 from ops.framework import EventBase
 from ops.main import main
@@ -31,16 +35,6 @@ logger = logging.getLogger(__name__)
 
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
-
-
-def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
-    """Return whether the certificate has the given common name."""
-    loaded_certificate = x509.load_pem_x509_certificate(certificate)
-    certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
-        x509.oid.NameOID.COMMON_NAME  # type: ignore[reportAttributeAccessIssue]
-    )[0].value
-
-    return certificate_common_name == common_name
 
 
 @trace_charm(

@@ -257,3 +257,13 @@ def generate_ca(
         .sign(private_key_object, hashes.SHA256())  # type: ignore[arg-type]
     )
     return cert.public_bytes(serialization.Encoding.PEM).decode().strip()
+
+
+def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
+    """Return whether the certificate has the given common name."""
+    loaded_certificate = x509.load_pem_x509_certificate(certificate)
+    certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
+        x509.oid.NameOID.COMMON_NAME  # type: ignore[reportAttributeAccessIssue]
+    )[0].value
+
+    return certificate_common_name == common_name
