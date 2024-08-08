@@ -152,6 +152,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         ca_certificate = generate_ca(
             private_key=private_key,
             subject=self._config_ca_common_name,
+            validity=self._config_root_ca_certificate_validity,
         )
         secret_content = {
             "private-key": private_key,

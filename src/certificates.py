@@ -140,7 +140,7 @@ def generate_certificate(
     csr: str,
     ca: str,
     ca_key: str,
-    validity: int = 365,
+    validity: int,
     is_ca: bool = False,
 ) -> str:
     """Generate a TLS certificate based on a CSR.
@@ -193,7 +193,7 @@ def generate_certificate(
 def generate_ca(
     private_key: str,
     subject: str,
-    validity: int = 365,
+    validity: int,
     country: str = "US",
 ) -> str:
     """Generate a CA Certificate.
