@@ -174,6 +174,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             subject=self._config_ca_common_name,
             private_key_password=private_key_password.encode(),
         )
+        self._push_ca_cert_to_container(ca_certificate.decode())
         secret_content = {
             "private-key-password": private_key_password,
             "private-key": private_key.decode(),
@@ -183,7 +184,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret.set_content(content=secret_content)
         else:
-            self._push_ca_cert_to_container(ca_certificate.decode())
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
