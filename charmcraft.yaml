@@ -92,3 +92,10 @@ actions:
 
   get-issued-certificates:
     description: Outputs the certificates issued by the charm.
+
+storage:
+  certs:
+    type: filesystem
+    description: Storage for certs
+    location: /var/certs
+    minimum-size: 10M
