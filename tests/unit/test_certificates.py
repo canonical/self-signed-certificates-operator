@@ -44,7 +44,7 @@ def test_given_private_key_and_subject_when_generate_ca_then_ca_is_generated_cor
     subject = "certifier.example.com"
     private_key = generate_private_key_helper()
 
-    certifier_pem = generate_ca(private_key=private_key, subject=subject)
+    certifier_pem = generate_ca(private_key=private_key, subject=subject, validity=365)
 
     cert = x509.load_pem_x509_certificate(certifier_pem.encode())
     private_key_object = load_pem_private_key(private_key.encode(), password=None)
@@ -102,6 +102,7 @@ def test_given_csr_and_ca_when_generate_certificate_then_certificate_is_generate
         csr=csr,
         ca=ca,
         ca_key=ca_key,
+        validity=365,
     )
 
     certificate_object = x509.load_pem_x509_certificate(certificate.encode())
@@ -133,7 +134,7 @@ def test_given_csr_and_ca_when_generate_certificate_then_certificate_is_generate
         sans_dns=sans,
     )
 
-    certificate = generate_certificate(csr=csr, ca=ca, ca_key=ca_key)
+    certificate = generate_certificate(csr=csr, ca=ca, ca_key=ca_key, validity=365)
 
     cert = x509.load_pem_x509_certificate(certificate.encode())
     result_all_sans = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
@@ -149,6 +150,7 @@ def test_given_private_key_when_generate_ca_then_basic_constraints_extension_is_
     ca = generate_ca(
         private_key=private_key,
         subject=subject,
+        validity=365,
     )
 
     certificate_object = x509.load_pem_x509_certificate(ca.encode())
@@ -176,6 +178,7 @@ def test_given_certificate_created_when_generate_certificate_then_verify_public_
         csr=csr,
         ca=ca,
         ca_key=ca_key,
+        validity=365,
     )
 
     certificate_object = x509.load_pem_x509_certificate(certificate.encode())
@@ -195,6 +198,7 @@ def test_given_request_is_for_ca_certificate_when_generate_certificate_then_cert
     ca = generate_ca(
         private_key=ca_private_key,
         subject="my.demo.ca",
+        validity=365,
     )
     server_private_key = generate_private_key_helper()
 
@@ -209,6 +213,7 @@ def test_given_request_is_for_ca_certificate_when_generate_certificate_then_cert
         ca=ca,
         ca_key=ca_private_key,
         is_ca=True,
+        validity=365,
     )
 
     loaded_server_cert = x509.load_pem_x509_certificate(server_cert.encode())
