@@ -165,7 +165,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=datetime.timedelta(days=self._config_certificate_validity),
+                expire=datetime.timedelta(days=self._config_root_ca_certificate_validity),
             )
         logger.info("Root certificates generated and stored.")
 
