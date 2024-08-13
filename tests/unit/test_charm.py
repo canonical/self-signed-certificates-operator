@@ -3,7 +3,7 @@
 
 import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import ops
@@ -50,12 +50,19 @@ class TestCharm(unittest.TestCase):
         patch_generate_ca.return_value = ca_certificate_bytes
         patch_generate_password.return_value = private_key_password
         patch_generate_private_key.return_value = private_key_bytes
-        key_values = {"ca-common-name": "pizza.com", "certificate-validity": 100}
+        key_values = {
+            "ca-common-name": "pizza.com",
+            "certificate-validity": 100,
+            "root-ca-validity": 200,
+        }
         self.harness.set_leader(is_leader=True)
 
         self.harness.update_config(key_values=key_values)
 
         ca_certificates_secret = self.harness._backend.secret_get(label="ca-certificates")
+        ca_certificates_secret_expiry = self.harness._backend.secret_info_get(
+            label="ca-certificates"
+        ).expires
 
         self.assertEqual(
             ca_certificates_secret["ca-certificate"],
@@ -68,6 +75,9 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             ca_certificates_secret["private-key"],
             private_key_string,
+        )
+        self.assertEqual(
+            (ca_certificates_secret_expiry - timedelta(days=200)).date(), datetime.now().date()
         )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV3.revoke_all_certificates")
