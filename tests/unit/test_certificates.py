@@ -3,16 +3,16 @@
 # See LICENSE file for licensing details.
 
 
-from charm import (
-    generate_ca,
-    generate_certificate,
-    generate_private_key,
-)
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
+from charm import (
+    generate_ca,
+    generate_certificate,
+    generate_private_key,
+)
 from tests.unit.certificates_helpers import (
     generate_ca as generate_ca_helper,
 )
