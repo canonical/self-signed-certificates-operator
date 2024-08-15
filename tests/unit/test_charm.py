@@ -27,12 +27,6 @@ TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
 
 
 class TestCharm:
-    # def setUp(self):
-    #     self.harness = ops.testing.Harness(SelfSignedCertificatesCharm)
-    #     self.addCleanup(self.harness.cleanup)
-    #     self.harness.set_leader(is_leader=True)
-    #     self.harness.begin()
-
     @pytest.fixture(autouse=True)
     def context(self):
         self.ctx = scenario.Context(
@@ -113,10 +107,11 @@ class TestCharm:
 
         state_out = self.ctx.run(event="config_changed", state=state_in)
         ca_certificates_secret = state_out.secrets[0]
-        ca_certificates_secret_expiry = ca_certificates_secret.expire
         content = ca_certificates_secret.contents
         assert content[0]["ca-certificate"] == ca_certificate_string
         assert content[0]["private-key"] == private_key_string
+        ca_certificates_secret_expiry = ca_certificates_secret.expire
+        assert ca_certificates_secret_expiry
         expected_delta = timedelta(days=200)
         actual_delta = ca_certificates_secret_expiry - datetime.now()
         tolerance = timedelta(seconds=1)
@@ -387,6 +382,7 @@ class TestCharm:
 
         action_output = self.ctx.run_action("get-issued-certificates", state=state_in)
 
+        assert action_output.results
         output_certificate = json.loads(action_output.results["certificates"][0])
         assert output_certificate["csr"] == csr
         assert output_certificate["certificate"] == certificate
@@ -414,7 +410,7 @@ class TestCharm:
         )
 
         action_output = self.ctx.run_action("get-ca-certificate", state=state_in)
-
+        assert action_output.results
         assert action_output.results["ca-certificate"] == ca_certificate
 
     def test_given_ca_cert_not_generated_when_get_ca_certificate_action_then_action_fails(self):

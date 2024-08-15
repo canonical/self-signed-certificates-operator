@@ -8,12 +8,6 @@ import datetime
 import logging
 from typing import Optional, cast
 
-from certificates import (
-    certificate_has_common_name,
-    generate_ca,
-    generate_certificate,
-    generate_private_key,
-)
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
@@ -29,6 +23,13 @@ from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoined
 from ops.framework import EventBase
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
+
+from certificates import (
+    certificate_has_common_name,
+    generate_ca,
+    generate_certificate,
+    generate_private_key,
+)
 
 logger = logging.getLogger(__name__)
 
