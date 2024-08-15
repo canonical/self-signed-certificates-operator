@@ -11,7 +11,7 @@ from typing import Dict
 
 import pytest
 import yaml
-from certificates import get_common_name_from_certificate
+from certificate import get_common_name_from_certificate
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)

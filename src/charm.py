@@ -6,22 +6,25 @@
 
 import datetime
 import logging
-import secrets
 from typing import Optional, cast
 
+from certificates import (
+    certificate_has_common_name,
+    generate_ca,
+    generate_certificate,
+    generate_private_key,
+)
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
 from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer, charm_tracing_config
-from charms.tls_certificates_interface.v3.tls_certificates import (
-    CertificateCreationRequestEvent,
-    TLSCertificatesProvidesV3,
-    generate_ca,
-    generate_certificate,
-    generate_private_key,
+from charms.tls_certificates_interface.v4.tls_certificates import (
+    Certificate,
+    CertificateSigningRequest,
+    ProviderCertificate,
+    TLSCertificatesProvidesV4,
 )
-from cryptography import x509
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoinedEvent
 from ops.framework import EventBase
 from ops.main import main
@@ -36,20 +39,10 @@ CA_CERT_STORAGE = "certs"
 CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
-def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
-    """Return whether the certificate has the given common name."""
-    loaded_certificate = x509.load_pem_x509_certificate(certificate)
-    certificate_common_name = loaded_certificate.subject.get_attributes_for_oid(
-        x509.oid.NameOID.COMMON_NAME  # type: ignore[reportAttributeAccessIssue]
-    )[0].value
-
-    return certificate_common_name == common_name
-
-
 @trace_charm(
     tracing_endpoint="_tracing_endpoint",
     server_cert="_tracing_server_cert",
-    extra_types=(TLSCertificatesProvidesV3,),
+    extra_types=(TLSCertificatesProvidesV4,),
 )
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
@@ -57,7 +50,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def __init__(self, *args):
         """Observe config change and certificate request events."""
         super().__init__(*args)
-        self.tls_certificates = TLSCertificatesProvidesV3(self, "certificates")
+        self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
             self.tracing, CA_CERT_PATH
@@ -68,10 +61,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._configure)
         self.framework.observe(self.on.secret_expired, self._configure)
         self.framework.observe(self.on.secret_changed, self._configure)
-        self.framework.observe(
-            self.tls_certificates.on.certificate_creation_request,
-            self._on_certificate_creation_request,
-        )
+        self.framework.observe(self.on.certificates_relation_changed, self._configure)
         self.framework.observe(self.on.get_ca_certificate_action, self._on_get_ca_certificate)
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
@@ -165,18 +155,16 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
-        private_key_password = generate_password()
-        private_key = generate_private_key(password=private_key_password.encode())
+        private_key = generate_private_key()
         ca_certificate = generate_ca(
             private_key=private_key,
             subject=self._config_ca_common_name,
-            private_key_password=private_key_password.encode(),
+            validity=self._config_root_ca_certificate_validity,
         )
-        self._push_ca_cert_to_container(ca_certificate.decode())
+        self._push_ca_cert_to_container(ca_certificate)
         secret_content = {
-            "private-key-password": private_key_password,
-            "private-key": private_key.decode(),
-            "ca-certificate": ca_certificate.decode(),
+            "private-key": private_key,
+            "ca-certificate": ca_certificate,
         }
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
@@ -185,7 +173,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=datetime.timedelta(days=self._config_certificate_validity),
+                expire=datetime.timedelta(days=self._config_root_ca_certificate_validity),
             )
         logger.info("Root certificates generated and stored.")
 
@@ -222,8 +210,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Process outstanding certificate requests."""
         for request in self.tls_certificates.get_outstanding_certificate_requests():
             self._generate_self_signed_certificate(
-                csr=request.csr,
-                is_ca=request.is_ca,
+                csr=str(request.certificate_signing_request),
+                is_ca=request.certificate_signing_request.is_ca,
                 relation_id=request.relation_id,
             )
 
@@ -242,28 +230,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             invalid_configs.append("certificate-validity")
         return invalid_configs
 
-    def _on_certificate_creation_request(self, event: CertificateCreationRequestEvent) -> None:
-        """Handle certificate requests.
-
-        Args:
-            event (CertificateCreationRequestEvent): Juju event
-        """
-        if not self.unit.is_leader():
-            return
-        if self._invalid_configs():
-            logger.warning("Invalid configuration. Certificate cannot be generated.")
-            return
-        if not self._root_certificate_is_stored:
-            logger.warning(
-                "Root certificate is not yet generated. Certificate cannot be generated."
-            )
-            return
-        self._generate_self_signed_certificate(
-            csr=event.certificate_signing_request,
-            is_ca=event.is_ca,
-            relation_id=event.relation_id,
-        )
-
     def _generate_self_signed_certificate(self, csr: str, is_ca: bool, relation_id: int) -> None:
         """Generate self-signed certificate.
 
@@ -275,19 +241,23 @@ class SelfSignedCertificatesCharm(CharmBase):
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         certificate = generate_certificate(
-            ca=ca_certificate_secret_content["ca-certificate"].encode(),
-            ca_key=ca_certificate_secret_content["private-key"].encode(),
-            ca_key_password=ca_certificate_secret_content["private-key-password"].encode(),
-            csr=csr.encode(),
+            ca=ca_certificate_secret_content["ca-certificate"],
+            ca_key=ca_certificate_secret_content["private-key"],
+            csr=csr,
             validity=self._config_certificate_validity,
             is_ca=is_ca,
-        ).decode()
+        )
         self.tls_certificates.set_relation_certificate(
-            certificate_signing_request=csr,
-            certificate=certificate,
-            ca=ca_certificate_secret_content["ca-certificate"],
-            chain=[ca_certificate_secret_content["ca-certificate"], certificate],
-            relation_id=relation_id,
+            provider_certificate=ProviderCertificate(
+                relation_id=relation_id,
+                certificate=Certificate.from_string(certificate),
+                certificate_signing_request=CertificateSigningRequest.from_string(csr),
+                ca=Certificate.from_string(ca_certificate_secret_content["ca-certificate"]),
+                chain=[
+                    Certificate.from_string(ca_certificate_secret_content["ca-certificate"]),
+                    Certificate.from_string(certificate),
+                ],
+            ),
         )
         logger.info("Generated certificate for relation %s", relation_id)
 
@@ -335,15 +305,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         with open(CA_CERT_PATH, "w") as f:
             f.write(ca_certificate)
-
-
-def generate_password() -> str:
-    """Generate a random string containing 64 bytes.
-
-    Returns:
-        str: Password
-    """
-    return secrets.token_hex(64)
 
 
 if __name__ == "__main__":
