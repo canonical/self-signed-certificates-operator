@@ -182,7 +182,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         if self._invalid_configs():
             return
-        if not self._root_certificate_is_stored or not self._root_certificate_is_valid():
+        if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
             self._generate_root_certificate()
             self.tls_certificates.revoke_all_certificates()
             logger.info("Revoked all previously issued certificates.")
@@ -190,30 +190,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
 
-    def _root_certificate_is_valid(self) -> bool:
-        """Return whether the stored root certificate is valid.
-
-        We check that:
-         - Its common name matches with the Juju configuration.
-         - It is not expired.
-
-        """
+    def _root_certificate_matches_config(self) -> bool:
+        """Return whether the stored root certificate matches with the config."""
         if not self._config_ca_common_name:
             raise ValueError("CA common name should not be empty")
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
-        ca_certificate_secret_info = ca_certificate_secret.get_info()
-        if not ca_certificate_secret_info.expires:
-            logger.error("Root certificate does not have an expiry date.")
-            return False
-        if ca_certificate_secret_info.expires < datetime.datetime.now():
-            return False
         ca = ca_certificate_secret_content["ca-certificate"].encode()
-        if not certificate_has_common_name(
-            certificate=ca, common_name=self._config_ca_common_name
-        ):
-            return False
-        return True
+        return certificate_has_common_name(certificate=ca, common_name=self._config_ca_common_name)
 
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""

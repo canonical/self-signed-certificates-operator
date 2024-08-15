@@ -254,6 +254,7 @@ class TestCharm:
             provider_certificate=expected_provider_certificate,
         )
 
+    @pytest.mark.skip(reason="https://github.com/canonical/operator/issues/1316")
     @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
