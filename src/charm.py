@@ -6,7 +6,6 @@
 
 import datetime
 import logging
-import os
 import secrets
 from typing import Optional, cast
 
@@ -34,8 +33,7 @@ logger = logging.getLogger(__name__)
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 CA_CERT_STORAGE = "certs"
-CA_CERT_FILENAME = "ca-cert.pem"
-CA_CERT_PATH = "/var/certs/ca-cert.pem"
+CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
 def certificate_has_common_name(certificate: bytes, common_name: str) -> bool:
@@ -335,9 +333,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         Args:
             ca_certificate: PEM String of the CA cert.
         """
-        location = self.model.storages["certs"][0].location
-        fpath = os.path.join(location, CA_CERT_FILENAME)
-        with open(fpath, "w") as f:
+        with open(CA_CERT_PATH, "w") as f:
             f.write(ca_certificate)
 
 

@@ -21,7 +21,6 @@ class TestCharm(unittest.TestCase):
         self.harness = ops.testing.Harness(SelfSignedCertificatesCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.set_leader(is_leader=True)
-        self.harness.add_storage(storage_name="certs", attach=True)
         self.harness.begin()
         self.mock_open = mock_open()
         self.patcher = patch("builtins.open", self.mock_open)
