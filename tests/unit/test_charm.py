@@ -122,7 +122,7 @@ class TestCharm:
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
-    def test_given_valid_config_when_config_changed_then_existing_certificates_are_revoked(
+    def test_given_root_certificate_not_stored_when_config_changed_then_existing_certificates_are_revoked(  # noqa: E501
         self,
         patch_generate_ca,
         patch_generate_private_key,
@@ -136,6 +136,7 @@ class TestCharm:
                 "certificate-validity": 100,
             },
             leader=True,
+            secrets=[],
         )
 
         self.ctx.run(event="config_changed", state=state_in)
@@ -166,6 +167,7 @@ class TestCharm:
                 }
             },
             owner="app",
+            expire=datetime.now() + timedelta(days=100),
         )
         state_in = scenario.State(
             config={
@@ -186,7 +188,7 @@ class TestCharm:
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
     @patch("charm.generate_certificate")
-    def test_given_outstanding_certificate_requests_when_secret_changed_then_certificates_are_generated(  # noqa: E501
+    def test_given_outstanding_certificate_requests_when_config_changed_then_certificates_are_generated(  # noqa: E501
         self,
         patch_generate_certificate,
         patch_get_outstanding_certificate_requests,
@@ -220,6 +222,7 @@ class TestCharm:
                 }
             },
             owner="app",
+            expire=datetime.now() + timedelta(days=100),
         )
         patch_get_outstanding_certificate_requests.return_value = [
             RequirerCSR(
@@ -251,45 +254,48 @@ class TestCharm:
             provider_certificate=expected_provider_certificate,
         )
 
-    # @patch("charm.certificate_has_common_name")
-    # @patch("charm.generate_private_key")
-    # @patch("charm.generate_ca")
-    # def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
-    #     self,
-    #     patch_generate_ca,
-    #     patch_generate_private_key,
-    #     patch_certificate_has_common_name,
-    # ):
-    #     ca_certificate_string = "whatever CA certificate"
-    #     private_key_string = "whatever private key"
-    #     patch_generate_ca.return_value = ca_certificate_string
-    #     patch_generate_private_key.return_value = private_key_string
-    #     patch_certificate_has_common_name.return_value = True
+    @patch("charm.certificate_has_common_name")
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_ca")
+    def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_private_key,
+        patch_certificate_has_common_name,
+    ):
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        patch_generate_ca.return_value = ca_certificate_string
+        patch_generate_private_key.return_value = private_key_string
+        patch_certificate_has_common_name.return_value = True
 
-    #     ca_certificates_secret = scenario.Secret(
-    #         id="0",
-    #         label="ca-certificates",
-    #         contents={0:{
-    #             "ca-certificate": "whatever initial CA certificate",
-    #             "private-key": private_key_string,
-    #         }},
-    #         owner="app",
-    #     )
-    #     state_in = scenario.State(
-    #         config={
-    #             "ca-common-name": "pizza.com",
-    #             "certificate-validity": 100,
-    #         },
-    #         leader=True,
-    #         secrets=[ca_certificates_secret]
-    #     )
+        ca_certificates_secret = scenario.Secret(
+            id="0",
+            label="ca-certificates",
+            contents={
+                0: {
+                    "ca-certificate": "whatever initial CA certificate",
+                    "private-key": private_key_string,
+                }
+            },
+            owner="app",
+            expire=datetime.now(),
+        )
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.com",
+                "certificate-validity": 100,
+            },
+            leader=True,
+            secrets=[ca_certificates_secret],
+        )
 
-    #     state_out = self.ctx.run(event=ca_certificates_secret.expired_event, state=state_in)
+        state_out = self.ctx.run(event=ca_certificates_secret.expired_event, state=state_in)
 
-    #     ca_certificates_secret = state_out.secrets[0].contents[1]
+        ca_certificates_secret = state_out.secrets[0].contents[1]
 
-    #     assert ca_certificates_secret["ca-certificate"] == ca_certificate_string
-    #     assert ca_certificates_secret["private-key"] == private_key_string
+        assert ca_certificates_secret["ca-certificate"] == ca_certificate_string
+        assert ca_certificates_secret["private-key"] == private_key_string
 
     @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
@@ -316,6 +322,7 @@ class TestCharm:
                 }
             },
             owner="app",
+            expire=datetime.now() + timedelta(days=100),
         )
         state_in = scenario.State(
             config={
