@@ -4,7 +4,7 @@
 import json
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
 
 import ops
 import ops.testing
@@ -13,6 +13,7 @@ from charms.tls_certificates_interface.v3.tls_certificates import ProviderCertif
 from ops.model import ActiveStatus, BlockedStatus
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
+CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
 class TestCharm(unittest.TestCase):
@@ -21,6 +22,12 @@ class TestCharm(unittest.TestCase):
         self.addCleanup(self.harness.cleanup)
         self.harness.set_leader(is_leader=True)
         self.harness.begin()
+        self.mock_open = mock_open()
+        self.patcher = patch("builtins.open", self.mock_open)
+        self.patcher.start()
+
+    def tearDown(self):
+        self.patcher.stop()
 
     def test_given_invalid_config_when_config_changed_then_status_is_blocked(self):
         key_values = {"ca-common-name": "", "certificate-validity": 100}
@@ -32,6 +39,27 @@ class TestCharm(unittest.TestCase):
             self.harness.model.unit.status,
             BlockedStatus("The following configuration values are not valid: ['ca-common-name']"),
         )
+
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_ca")
+    def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_private_key,
+    ):
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        patch_generate_ca.return_value = ca_certificate_string.encode()
+        patch_generate_private_key.return_value = private_key_string.encode()
+        key_values = {
+            "ca-common-name": "pizza.com",
+            "certificate-validity": 100,
+            "root-ca-validity": 200,
+        }
+        self.harness.set_leader(is_leader=True)
+
+        self.harness.update_config(key_values=key_values)
+        self.mock_open.return_value.write.assert_called_with(ca_certificate_string)
 
     @patch("charm.generate_private_key")
     @patch("charm.generate_password")
