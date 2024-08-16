@@ -29,6 +29,12 @@ CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 class TestCharm:
     @pytest.fixture(autouse=True)
+    def setup(self):
+        self.mock_open = mock_open()
+        self.patcher = patch("builtins.open", self.mock_open)
+        self.patcher.start()
+
+    @pytest.fixture(autouse=True)
     def context(self):
         self.ctx = scenario.Context(
             charm_type=SelfSignedCertificatesCharm,
@@ -84,6 +90,30 @@ class TestCharm:
         state_out = self.ctx.run(event="collect_unit_status", state=state_in)
 
         assert state_out.unit_status == ActiveStatus()
+
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_ca")
+    def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_private_key,
+    ):
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        patch_generate_ca.return_value = ca_certificate_string
+        patch_generate_private_key.return_value = private_key_string
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.com",
+                "certificate-validity": 100,
+                "root-ca-validity": 200,
+            },
+            leader=True,
+        )
+
+        self.ctx.run(event="config_changed", state=state_in)
+
+        self.mock_open.return_value.write.assert_called_with(ca_certificate_string)
 
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
