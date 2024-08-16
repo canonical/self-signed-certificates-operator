@@ -3,7 +3,7 @@
 
 import json
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import pytest
 import scenario
@@ -24,6 +24,7 @@ from tests.unit.certificates_helpers import (
 )
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
+CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
 class TestCharm:

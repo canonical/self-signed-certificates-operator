@@ -12,7 +12,7 @@ from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
 from charms.tempo_k8s.v1.charm_tracing import trace_charm
-from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer
+from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer, charm_tracing_config
 from charms.tls_certificates_interface.v4.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
@@ -36,10 +36,13 @@ logger = logging.getLogger(__name__)
 
 CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
+CA_CERT_STORAGE = "certs"
+CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
 @trace_charm(
-    tracing_endpoint="tempo_otlp_http_endpoint",
+    tracing_endpoint="_tracing_endpoint",
+    server_cert="_tracing_server_cert",
     extra_types=(TLSCertificatesProvidesV4,),
 )
 class SelfSignedCertificatesCharm(CharmBase):
@@ -50,6 +53,10 @@ class SelfSignedCertificatesCharm(CharmBase):
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
+        self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
+            self.tracing, CA_CERT_PATH
+        )
+
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
         self.framework.observe(self.on.update_status, self._configure)
         self.framework.observe(self.on.config_changed, self._configure)
@@ -155,6 +162,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             subject=self._config_ca_common_name,
             validity=self._config_root_ca_certificate_validity,
         )
+        self._push_ca_cert_to_container(ca_certificate)
         secret_content = {
             "private-key": private_key,
             "ca-certificate": ca_certificate,
@@ -290,13 +298,14 @@ class SelfSignedCertificatesCharm(CharmBase):
             for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
                 send_ca_cert.remove_certificate(relation.id)
 
-    @property
-    def tempo_otlp_http_endpoint(self) -> Optional[str]:
-        """Tempo endpoint for charm tracing."""
-        if self.tracing.is_ready():
-            return self.tracing.get_endpoint("otlp_http")
-        else:
-            return None
+    def _push_ca_cert_to_container(self, ca_certificate: str):
+        """Store the CA certificate in the charm container.
+
+        Args:
+            ca_certificate: PEM String of the CA cert.
+        """
+        with open(CA_CERT_PATH, "w") as f:
+            f.write(ca_certificate)
 
 
 if __name__ == "__main__":
