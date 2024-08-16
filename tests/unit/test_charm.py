@@ -8,20 +8,16 @@ from unittest.mock import mock_open, patch
 import pytest
 import scenario
 from charms.tls_certificates_interface.v4.tls_certificates import (
-    Certificate,
-    CertificateSigningRequest,
     ProviderCertificate,
     RequirerCSR,
-)
-from ops.model import ActiveStatus, BlockedStatus
-
-from charm import SelfSignedCertificatesCharm
-from tests.unit.certificates_helpers import (
     generate_ca,
     generate_certificate,
     generate_csr,
     generate_private_key,
 )
+from ops.model import ActiveStatus, BlockedStatus
+
+from charm import SelfSignedCertificatesCharm
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
 CA_CERT_PATH = "/tmp/ca-cert.pem"
@@ -174,27 +170,33 @@ class TestCharm:
 
         assert patch_revoke_all_certificates.called
 
-    @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_new_common_name_when_config_changed_then_new_root_ca_is_stored(
         self,
         patch_generate_ca,
         patch_generate_private_key,
-        patch_certificate_has_common_name,
     ):
-        new_ca = "whatever CA certificate"
-        private_key = "whatever private key"
-        patch_certificate_has_common_name.return_value = False
+        ca_private_key = generate_private_key()
+        initial_ca_certificate = generate_ca(
+            private_key=ca_private_key,
+            common_name="initial.example.com",
+            validity=100,
+        )
+        new_ca = generate_ca(
+            private_key=ca_private_key,
+            common_name="new.example.com",
+            validity=100,
+        )
         patch_generate_ca.return_value = new_ca
-        patch_generate_private_key.return_value = private_key
+        patch_generate_private_key.return_value = ca_private_key
         ca_certificate_secret = scenario.Secret(
             id="0",
             label="ca-certificates",
             contents={
                 0: {
-                    "ca-certificate": "whatever initial CA certificate",
-                    "private-key": private_key,
+                    "ca-certificate": str(initial_ca_certificate),
+                    "private-key": str(ca_private_key),
                 }
             },
             owner="app",
@@ -213,9 +215,8 @@ class TestCharm:
 
         ca_certificates_secret = state_out.secrets[0]
         secret_content = ca_certificates_secret.contents
-        assert secret_content[1]["ca-certificate"] == new_ca
+        assert secret_content[1]["ca-certificate"] == str(new_ca)
 
-    @patch("charm.certificate_has_common_name")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
     @patch("charm.generate_certificate")
@@ -224,21 +225,21 @@ class TestCharm:
         patch_generate_certificate,
         patch_get_outstanding_certificate_requests,
         patch_set_relation_certificate,
-        patch_certificate_has_common_name,
     ):
         requirer_private_key = generate_private_key()
         provider_private_key = generate_private_key()
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
+            validity=100,
         )
         requirer_csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
         certificate = generate_certificate(
             csr=requirer_csr,
             ca=provider_ca,
-            ca_key=provider_private_key,
+            ca_private_key=provider_private_key,
+            validity=100,
         )
-        patch_certificate_has_common_name.return_value = True
         tls_relation = scenario.Relation(
             endpoint="certificates",
             interface="tls-certificates",
@@ -248,8 +249,8 @@ class TestCharm:
             label="ca-certificates",
             contents={
                 0: {
-                    "ca-certificate": provider_ca,
-                    "private-key": provider_private_key,
+                    "ca-certificate": str(provider_ca),
+                    "private-key": str(provider_private_key),
                 }
             },
             owner="app",
@@ -258,7 +259,7 @@ class TestCharm:
         patch_get_outstanding_certificate_requests.return_value = [
             RequirerCSR(
                 relation_id=tls_relation.relation_id,
-                certificate_signing_request=CertificateSigningRequest.from_string(requirer_csr),
+                certificate_signing_request=requirer_csr,
             ),
         ]
         patch_generate_certificate.return_value = certificate
@@ -276,30 +277,27 @@ class TestCharm:
 
         expected_provider_certificate = ProviderCertificate(
             relation_id=tls_relation.relation_id,
-            certificate=Certificate.from_string(certificate),
-            certificate_signing_request=CertificateSigningRequest.from_string(requirer_csr),
-            ca=Certificate.from_string(provider_ca),
-            chain=[Certificate.from_string(provider_ca), Certificate.from_string(certificate)],
+            certificate=certificate,
+            certificate_signing_request=requirer_csr,
+            ca=provider_ca,
+            chain=[provider_ca, certificate],
         )
         patch_set_relation_certificate.assert_called_with(
             provider_certificate=expected_provider_certificate,
         )
 
     @pytest.mark.skip(reason="https://github.com/canonical/operator/issues/1316")
-    @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
         self,
         patch_generate_ca,
         patch_generate_private_key,
-        patch_certificate_has_common_name,
     ):
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
         patch_generate_ca.return_value = ca_certificate_string
         patch_generate_private_key.return_value = private_key_string
-        patch_certificate_has_common_name.return_value = True
 
         ca_certificates_secret = scenario.Secret(
             id="0",
@@ -329,28 +327,35 @@ class TestCharm:
         assert ca_certificates_secret["ca-certificate"] == ca_certificate_string
         assert ca_certificates_secret["private-key"] == private_key_string
 
-    @patch("charm.certificate_has_common_name")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_initial_config_when_config_changed_then_stored_ca_common_name_uses_new_config(
         self,
         patch_generate_ca,
         patch_generate_private_key,
-        patch_certificate_has_common_name,
     ):
-        patch_certificate_has_common_name.return_value = False
-        ca_certificate_2_string = "whatever CA certificate 2"
-        private_key_string_2 = "whatever private key 2"
-        patch_generate_ca.return_value = ca_certificate_2_string
-        patch_generate_private_key.return_value = private_key_string_2
+        initial_ca_private_key = generate_private_key()
+        new_ca_private_key = generate_private_key()
+        initial_ca_certificate = generate_ca(
+            private_key=initial_ca_private_key,
+            common_name="common-name-initial.com",
+            validity=100,
+        )
+        new_ca_certificate = generate_ca(
+            private_key=new_ca_private_key,
+            common_name="common-name-new.com",
+            validity=100,
+        )
+        patch_generate_ca.return_value = new_ca_certificate
+        patch_generate_private_key.return_value = new_ca_private_key
 
         ca_certificates_secret = scenario.Secret(
             id="0",
             label="ca-certificates",
             contents={
                 0: {
-                    "ca-certificate": "whatever CA certificate 1",
-                    "private-key": "whatever private key 1",
+                    "ca-certificate": str(initial_ca_certificate),
+                    "private-key": str(initial_ca_private_key),
                 }
             },
             owner="app",
@@ -368,8 +373,8 @@ class TestCharm:
         state_out = self.ctx.run(event="config_changed", state=state_in)
 
         ca_certificates_secret = state_out.secrets[0].contents[1]
-        assert ca_certificates_secret["ca-certificate"] == ca_certificate_2_string
-        assert ca_certificates_secret["private-key"] == private_key_string_2
+        assert ca_certificates_secret["ca-certificate"] == str(new_ca_certificate)
+        assert ca_certificates_secret["private-key"] == str(new_ca_private_key)
 
     def test_given_no_certificates_issued_when_get_issued_certificates_action_then_action_fails(
         self,
@@ -390,24 +395,25 @@ class TestCharm:
         ca_certificate = generate_ca(
             private_key=ca_private_key,
             common_name="example.com",
+            validity=100,
         )
         requirer_private_key = generate_private_key()
         csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
         certificate = generate_certificate(
             csr=csr,
             ca=ca_certificate,
-            ca_key=ca_private_key,
+            ca_private_key=ca_private_key,
+            validity=100,
         )
         chain = [ca_certificate, certificate]
         revoked = False
-        cert = Certificate.from_string(certificate)
         patch_get_issued_certificates.return_value = [
             ProviderCertificate(
                 relation_id=1,
-                certificate_signing_request=CertificateSigningRequest.from_string(csr),
-                certificate=cert,
-                ca=Certificate.from_string(ca_certificate),
-                chain=[Certificate.from_string(c) for c in chain],
+                certificate_signing_request=csr,
+                certificate=certificate,
+                ca=ca_certificate,
+                chain=chain,
                 revoked=revoked,
             )
         ]
@@ -423,10 +429,10 @@ class TestCharm:
 
         assert action_output.results
         output_certificate = json.loads(action_output.results["certificates"][0])
-        assert output_certificate["csr"] == csr
-        assert output_certificate["certificate"] == certificate
-        assert output_certificate["ca"] == ca_certificate
-        assert output_certificate["chain"] == chain
+        assert output_certificate["csr"] == str(csr)
+        assert output_certificate["certificate"] == str(certificate)
+        assert output_certificate["ca"] == str(ca_certificate)
+        assert output_certificate["chain"] == [str(ca_certificate), str(certificate)]
         assert output_certificate["revoked"] == revoked
 
     def test_given_ca_cert_generated_when_get_ca_certificate_action_then_returns_ca_certificate(
