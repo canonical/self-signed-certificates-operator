@@ -205,6 +205,9 @@ class TestCharm:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.com",
+                "ca-email-address": "abc@gmail.com",
+                "ca-country-name": "CA",
+                "ca-locality-name": "Montreal",
                 "certificate-validity": 100,
             },
             leader=True,
@@ -216,6 +219,17 @@ class TestCharm:
         ca_certificates_secret = state_out.secrets[0]
         secret_content = ca_certificates_secret.contents
         assert secret_content[1]["ca-certificate"] == str(new_ca)
+        patch_generate_ca.assert_called_with(
+            private_key=ca_private_key,
+            common_name="pizza.com",
+            organization=None,
+            organizational_unit=None,
+            email_address="abc@gmail.com",
+            country_name="CA",
+            state_or_province_name=None,
+            locality_name="Montreal",
+            validity=365,
+        )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")

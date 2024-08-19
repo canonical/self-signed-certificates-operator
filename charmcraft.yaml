@@ -77,6 +77,24 @@ config:
       type: string
       default: self-signed-certificates-operator
       description: Common name to be used by the Certificate Authority.
+    ca-organization:
+      type: string
+      description: Organization name to be used by the Certificate Authority.
+    ca-organizational-unit:
+      type: string
+      description: Organizational unit to be used by the Certificate Authority.
+    ca-email-address:
+      type: string
+      description: Email address to be used by the Certificate Authority.
+    ca-country-name:
+      type: string
+      description: Country name to be used by the Certificate Authority.
+    ca-state-or-province-name:
+      type: string
+      description: State or province name to be used by the Certificate Authority.
+    ca-locality-name:
+      type: string
+      description: Locality name to be used by the Certificate Authority.
     root-ca-validity:
       type: int
       default: 365

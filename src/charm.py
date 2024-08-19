@@ -121,15 +121,31 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     @property
     def _config_ca_common_name(self) -> Optional[str]:
-        """Returns the user provided common name.
-
-         This common name should only be used when the 'generate-self-signed-certificates' config
-         is set to True.
-
-        Returns:
-            str: Common name
-        """
         return cast(Optional[str], self.model.config.get("ca-common-name", None))
+
+    @property
+    def _config_ca_organization(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-organization", None))
+
+    @property
+    def _config_ca_organizational_unit(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-organizational-unit", None))
+
+    @property
+    def _config_ca_email_address(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-email-address", None))
+
+    @property
+    def _config_ca_country_name(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-country-name", None))
+
+    @property
+    def _config_ca_state_or_province_name(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-state-or-province-name", None))
+
+    @property
+    def _config_ca_locality_name(self) -> Optional[str]:
+        return cast(Optional[str], self.model.config.get("ca-locality-name", None))
 
     @property
     def _root_certificate_is_stored(self) -> bool:
@@ -157,6 +173,12 @@ class SelfSignedCertificatesCharm(CharmBase):
         ca_certificate = generate_ca(
             private_key=private_key,
             common_name=self._config_ca_common_name,
+            organization=self._config_ca_organization,
+            organizational_unit=self._config_ca_organizational_unit,
+            email_address=self._config_ca_email_address,
+            country_name=self._config_ca_country_name,
+            state_or_province_name=self._config_ca_state_or_province_name,
+            locality_name=self._config_ca_locality_name,
             validity=self._config_root_ca_certificate_validity,
         )
         self._push_ca_cert_to_container(str(ca_certificate))
