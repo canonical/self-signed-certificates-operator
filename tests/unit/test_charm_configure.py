@@ -1,7 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import json
 from datetime import datetime, timedelta
 from unittest.mock import mock_open, patch
 
@@ -15,15 +14,13 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
     generate_csr,
     generate_private_key,
 )
-from ops.model import ActiveStatus, BlockedStatus
 
 from charm import SelfSignedCertificatesCharm
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
-CA_CERT_PATH = "/tmp/ca-cert.pem"
 
 
-class TestCharm:
+class TestCharmConfigure:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.mock_open = mock_open()
@@ -35,57 +32,6 @@ class TestCharm:
         self.ctx = scenario.Context(
             charm_type=SelfSignedCertificatesCharm,
         )
-
-    def test_given_invalid_config_when_collect_unit_status_then_status_is_blocked(self):
-        state_in = scenario.State(
-            config={
-                "ca-common-name": "",
-                "certificate-validity": 100,
-            },
-            leader=True,
-        )
-
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
-
-        assert state_out.unit_status == BlockedStatus(
-            "The following configuration values are not valid: ['ca-common-name']"
-        )
-
-    def test_given_invalid_validity_config_when_collect_unit_status_then_status_is_blocked(self):
-        state_in = scenario.State(
-            config={
-                "ca-common-name": "pizza.com",
-                "certificate-validity": 0,
-            },
-            leader=True,
-        )
-
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
-
-        assert state_out.unit_status == BlockedStatus(
-            "The following configuration values are not valid: ['certificate-validity']"
-        )
-
-    @patch("charm.generate_private_key")
-    @patch("charm.generate_ca")
-    def test_given_valid_config_when_collect_unit_status_then_status_is_active(
-        self,
-        patch_generate_ca,
-        patch_generate_private_key,
-    ):
-        patch_generate_ca.return_value = "whatever CA certificate"
-        patch_generate_private_key.return_value = "whatever private key"
-        state_in = scenario.State(
-            config={
-                "ca-common-name": "pizza.com",
-                "certificate-validity": 100,
-            },
-            leader=True,
-        )
-
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
-
-        assert state_out.unit_status == ActiveStatus()
 
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
@@ -390,94 +336,43 @@ class TestCharm:
         assert ca_certificates_secret["ca-certificate"] == str(new_ca_certificate)
         assert ca_certificates_secret["private-key"] == str(new_ca_private_key)
 
-    def test_given_no_certificates_issued_when_get_issued_certificates_action_then_action_fails(
-        self,
-    ):
-        state_in = scenario.State()
-
-        action_output = self.ctx.run_action("get-issued-certificates", state=state_in)
-
-        assert not action_output.success
-        assert action_output.failure == "No certificates issued yet."
-
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_issued_certificates")
-    def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
-        self,
-        patch_get_issued_certificates,
-    ):
-        ca_private_key = generate_private_key()
-        ca_certificate = generate_ca(
-            private_key=ca_private_key,
+    def test_given_certificate_transfer_relations_when_configure_then_ca_cert_is_advertised(self):
+        traefik_relation = scenario.Relation(
+            endpoint="send-ca-cert",
+            interface="certificate_transfer",
+        )
+        another_relation = scenario.Relation(
+            endpoint="send-ca-cert",
+            interface="certificate_transfer",
+        )
+        provider_private_key = generate_private_key()
+        provider_ca = generate_ca(
+            private_key=provider_private_key,
             common_name="example.com",
             validity=100,
         )
-        requirer_private_key = generate_private_key()
-        csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
-        certificate = generate_certificate(
-            csr=csr,
-            ca=ca_certificate,
-            ca_private_key=ca_private_key,
-            validity=100,
-        )
-        chain = [ca_certificate, certificate]
-        revoked = False
-        patch_get_issued_certificates.return_value = [
-            ProviderCertificate(
-                relation_id=1,
-                certificate_signing_request=csr,
-                certificate=certificate,
-                ca=ca_certificate,
-                chain=chain,
-                revoked=revoked,
-            )
-        ]
-        state_in = scenario.State(
-            config={
-                "ca-common-name": "example.com",
-                "certificate-validity": 100,
-            },
-            leader=True,
-        )
-
-        action_output = self.ctx.run_action("get-issued-certificates", state=state_in)
-
-        assert action_output.results
-        output_certificate = json.loads(action_output.results["certificates"][0])
-        assert output_certificate["csr"] == str(csr)
-        assert output_certificate["certificate"] == str(certificate)
-        assert output_certificate["ca"] == str(ca_certificate)
-        assert output_certificate["chain"] == [str(ca_certificate), str(certificate)]
-        assert output_certificate["revoked"] == revoked
-
-    def test_given_ca_cert_generated_when_get_ca_certificate_action_then_returns_ca_certificate(
-        self,
-    ):
-        ca_certificate = "whatever CA certificate"
-        ca_certificates_secret = scenario.Secret(
+        secret = scenario.Secret(
             id="0",
             label="ca-certificates",
             contents={
                 0: {
-                    "ca-certificate": ca_certificate,
+                    "ca-certificate": str(provider_ca),
+                    "private-key": str(provider_private_key),
                 }
             },
             owner="app",
         )
         state_in = scenario.State(
+            relations=[traefik_relation, another_relation],
+            secrets=[secret],
             leader=True,
-            secrets=[ca_certificates_secret],
+            config={
+                "ca-common-name": "example.com",
+                "certificate-validity": 100,
+            },
         )
 
-        action_output = self.ctx.run_action("get-ca-certificate", state=state_in)
-        assert action_output.results
-        assert action_output.results["ca-certificate"] == ca_certificate
+        state_out = self.ctx.run(event="config_changed", state=state_in)
 
-    def test_given_ca_cert_not_generated_when_get_ca_certificate_action_then_action_fails(self):
-        state_in = scenario.State(
-            leader=True,
-        )
-
-        action_output = self.ctx.run_action("get-ca-certificate", state=state_in)
-
-        assert not action_output.success
-        assert action_output.failure == "Root Certificate is not yet generated"
+        assert state_out.relations[0].local_unit_data["ca"] == str(provider_ca)
+        assert state_out.relations[1].local_unit_data["ca"] == str(provider_ca)
