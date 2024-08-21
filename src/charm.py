@@ -303,19 +303,17 @@ class SelfSignedCertificatesCharm(CharmBase):
         Args:
             rel_id: Relation id. If not given, update all relations.
         """
+        if not self._root_certificate_is_stored:
+            return
         send_ca_cert = CertificateTransferProvides(self, SEND_CA_CERT_REL_NAME)
-        if self._root_certificate_is_stored:
-            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-            secret_content = secret.get_content(refresh=True)
-            ca = secret_content["ca-certificate"]
-            if rel_id:
-                send_ca_cert.set_certificate("", ca, [], relation_id=rel_id)
-            else:
-                for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
-                    send_ca_cert.set_certificate("", ca, [], relation_id=relation.id)
+        secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+        secret_content = secret.get_content(refresh=True)
+        ca = secret_content["ca-certificate"]
+        if rel_id:
+            send_ca_cert.set_certificate("", ca, [], relation_id=rel_id)
         else:
             for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
-                send_ca_cert.remove_certificate(relation.id)
+                send_ca_cert.set_certificate("", ca, [], relation_id=relation.id)
 
     def _push_ca_cert_to_container(self, ca_certificate: str):
         """Store the CA certificate in the charm container.
