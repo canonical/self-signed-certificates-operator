@@ -231,7 +231,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         for request in self.tls_certificates.get_outstanding_certificate_requests():
             self._generate_self_signed_certificate(
                 csr=request.certificate_signing_request,
-                is_ca=request.certificate_signing_request.is_ca,
+                is_ca=request.is_ca,
                 relation_id=request.relation_id,
             )
 

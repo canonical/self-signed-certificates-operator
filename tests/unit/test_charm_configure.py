@@ -220,6 +220,7 @@ class TestCharmConfigure:
             RequirerCSR(
                 relation_id=tls_relation.relation_id,
                 certificate_signing_request=requirer_csr,
+                is_ca=False,
             ),
         ]
         patch_generate_certificate.return_value = certificate
