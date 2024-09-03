@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 import scenario
-from ops.model import ActiveStatus, BlockedStatus
+from ops import ActiveStatus, BlockedStatus
 
 from charm import SelfSignedCertificatesCharm
 
@@ -26,7 +26,7 @@ class TestCharmCollectStatus:
             leader=True,
         )
 
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
+        state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == BlockedStatus(
             "The following configuration values are not valid: ['ca-common-name']"
@@ -35,13 +35,13 @@ class TestCharmCollectStatus:
     def test_given_invalid_validity_config_when_collect_unit_status_then_status_is_blocked(self):
         state_in = scenario.State(
             config={
-                "ca-common-name": "pizza.com",
+                "ca-common-name": "pizza.example.com",
                 "certificate-validity": 0,
             },
             leader=True,
         )
 
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
+        state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == BlockedStatus(
             "The following configuration values are not valid: ['certificate-validity']"
@@ -58,12 +58,12 @@ class TestCharmCollectStatus:
         patch_generate_private_key.return_value = "whatever private key"
         state_in = scenario.State(
             config={
-                "ca-common-name": "pizza.com",
+                "ca-common-name": "pizza.example.com",
                 "certificate-validity": 100,
             },
             leader=True,
         )
 
-        state_out = self.ctx.run(event="collect_unit_status", state=state_in)
+        state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == ActiveStatus()

@@ -31,10 +31,10 @@ class TestCharmGetIssuedCertificates:
     ):
         state_in = scenario.State()
 
-        action_output = self.ctx.run_action("get-issued-certificates", state=state_in)
+        with pytest.raises(scenario.ActionFailed) as exc:
+            self.ctx.run(self.ctx.on.action("get-issued-certificates"), state=state_in)
 
-        assert not action_output.success
-        assert action_output.failure == "No certificates issued yet."
+        assert exc.value.message == "No certificates issued yet."
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_issued_certificates")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
@@ -75,10 +75,10 @@ class TestCharmGetIssuedCertificates:
             leader=True,
         )
 
-        action_output = self.ctx.run_action("get-issued-certificates", state=state_in)
+        self.ctx.run(self.ctx.on.action("get-issued-certificates"), state=state_in)
 
-        assert action_output.results
-        output_certificate = json.loads(action_output.results["certificates"][0])
+        assert self.ctx.action_results
+        output_certificate = json.loads(self.ctx.action_results["certificates"][0])
         assert output_certificate["csr"] == str(csr)
         assert output_certificate["certificate"] == str(certificate)
         assert output_certificate["ca"] == str(ca_certificate)

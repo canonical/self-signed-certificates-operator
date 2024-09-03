@@ -20,30 +20,27 @@ class TestCharmGetCACertificate:
     ):
         ca_certificate = "whatever CA certificate"
         ca_certificates_secret = scenario.Secret(
-            id="0",
-            label="ca-certificates",
-            contents={
-                0: {
-                    "ca-certificate": ca_certificate,
-                }
+            {
+                "ca-certificate": ca_certificate,
             },
+            label="ca-certificates",
             owner="app",
         )
         state_in = scenario.State(
             leader=True,
-            secrets=[ca_certificates_secret],
+            secrets={ca_certificates_secret},
         )
 
-        action_output = self.ctx.run_action("get-ca-certificate", state=state_in)
-        assert action_output.results
-        assert action_output.results["ca-certificate"] == ca_certificate
+        self.ctx.run(self.ctx.on.action("get-ca-certificate"), state=state_in)
+        assert self.ctx.action_results
+        assert self.ctx.action_results["ca-certificate"] == ca_certificate
 
     def test_given_ca_cert_not_generated_when_get_ca_certificate_action_then_action_fails(self):
         state_in = scenario.State(
             leader=True,
         )
 
-        action_output = self.ctx.run_action("get-ca-certificate", state=state_in)
+        with pytest.raises(scenario.ActionFailed) as exc:
+            self.ctx.run(self.ctx.on.action("get-ca-certificate"), state=state_in)
 
-        assert not action_output.success
-        assert action_output.failure == "Root Certificate is not yet generated"
+        assert exc.value.message == "Root Certificate is not yet generated"
