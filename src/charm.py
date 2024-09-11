@@ -200,7 +200,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret.set_content(content=secret_content)
         else:
-            logger.warning(self._config_root_ca_certificate_validity)
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
