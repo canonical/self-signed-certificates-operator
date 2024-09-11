@@ -93,6 +93,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         try:
             validity = parse_time_string(str(self.model.config.get("root-ca-validity", "")))
         except ValueError:
+            logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
         return validity
 
@@ -124,6 +125,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         try:
             validity = parse_time_string(str(self.model.config.get("certificate-validity", "")))
         except ValueError:
+            logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
         return validity
 
