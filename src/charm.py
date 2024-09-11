@@ -4,8 +4,8 @@
 
 """Self Signed X.509 Certificates."""
 
-import datetime
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional, cast
 
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
@@ -189,11 +189,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret.set_content(content=secret_content)
+            secret.set_info(
+                expire=timedelta(days=self._config_root_ca_certificate_validity),
+            )
         else:
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=datetime.timedelta(days=self._config_root_ca_certificate_validity),
+                expire=timedelta(days=self._config_root_ca_certificate_validity),
             )
         logger.info("Root certificates generated and stored.")
 
@@ -209,13 +212,23 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         if self._invalid_configs():
             return
-        if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
+        if (
+            not self._root_certificate_is_stored
+            or not self._root_certificate_matches_config()
+            or self._root_ca_juju_secret_is_expired()
+        ):
             self._generate_root_certificate()
-            self.tls_certificates.revoke_all_certificates()
-            logger.info("Revoked all previously issued certificates.")
             return
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
+
+    def _root_ca_juju_secret_is_expired(self) -> bool:
+        """Return whether the Juju secret that holds the root CA certificate is expired."""
+        ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+        secret_info = ca_certificate_secret.get_info()
+        if secret_info.expires is None:
+            return False
+        return secret_info.expires < datetime.now(timezone.utc)
 
     def _root_certificate_matches_config(self) -> bool:
         """Return whether the stored root certificate matches with the config."""

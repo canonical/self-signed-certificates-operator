@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -92,30 +92,6 @@ class TestCharmConfigure:
             abs(actual_delta - expected_delta) <= tolerance
         ), f"Expected: {expected_delta}, but got: {actual_delta}"
 
-    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
-    @patch("charm.generate_private_key")
-    @patch("charm.generate_ca")
-    def test_given_root_certificate_not_stored_when_config_changed_then_existing_certificates_are_revoked(  # noqa: E501
-        self,
-        patch_generate_ca,
-        patch_generate_private_key,
-        patch_revoke_all_certificates,
-    ):
-        patch_generate_ca.return_value = "whatever CA certificate"
-        patch_generate_private_key.return_value = "whatever private key"
-        state_in = scenario.State(
-            config={
-                "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
-            },
-            leader=True,
-            secrets=frozenset(),
-        )
-
-        self.ctx.run(self.ctx.on.config_changed(), state=state_in)
-
-        assert patch_revoke_all_certificates.called
-
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_new_common_name_when_config_changed_then_new_root_ca_is_stored(
@@ -143,7 +119,7 @@ class TestCharmConfigure:
             },
             label="ca-certificates",
             owner="app",
-            expire=datetime.now() + timedelta(days=100),
+            expire=datetime.now(timezone.utc) + timedelta(days=100),
         )
         state_in = scenario.State(
             config={
@@ -209,7 +185,7 @@ class TestCharmConfigure:
             },
             label="ca-certificates",
             owner="app",
-            expire=datetime.now() + timedelta(days=100),
+            expire=datetime.now(timezone.utc) + timedelta(days=100),
         )
         patch_get_outstanding_certificate_requests.return_value = [
             RequirerCSR(
@@ -242,7 +218,6 @@ class TestCharmConfigure:
             provider_certificate=expected_provider_certificate,
         )
 
-    @pytest.mark.skip(reason="https://github.com/canonical/operator/issues/1316")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
@@ -250,19 +225,29 @@ class TestCharmConfigure:
         patch_generate_ca,
         patch_generate_private_key,
     ):
-        ca_certificate_string = "whatever CA certificate"
-        private_key_string = "whatever private key"
-        patch_generate_ca.return_value = ca_certificate_string
-        patch_generate_private_key.return_value = private_key_string
+        initial_ca_private_key = generate_private_key()
+        new_ca_private_key = generate_private_key()
+        initial_ca_certificate = generate_ca(
+            private_key=initial_ca_private_key,
+            common_name="common-name-initial.example.com",
+            validity=100,
+        )
+        new_ca_certificate = generate_ca(
+            private_key=new_ca_private_key,
+            common_name="common-name-new.example.com",
+            validity=100,
+        )
+        patch_generate_ca.return_value = new_ca_certificate
+        patch_generate_private_key.return_value = new_ca_private_key
 
         ca_certificates_secret = scenario.Secret(
             {
-                "ca-certificate": "whatever initial CA certificate",
-                "private-key": private_key_string,
+                "ca-certificate": str(initial_ca_certificate),
+                "private-key": str(initial_ca_private_key),
             },
             label="ca-certificates",
             owner="app",
-            expire=datetime.now(),
+            expire=datetime.now(timezone.utc),
         )
         state_in = scenario.State(
             config={
@@ -280,8 +265,8 @@ class TestCharmConfigure:
         ca_certificates_secret = state_out.get_secret(label="ca-certificates").latest_content
 
         assert ca_certificates_secret is not None
-        assert ca_certificates_secret["ca-certificate"] == ca_certificate_string
-        assert ca_certificates_secret["private-key"] == private_key_string
+        assert ca_certificates_secret["ca-certificate"] == str(new_ca_certificate)
+        assert ca_certificates_secret["private-key"] == str(new_ca_private_key)
 
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
@@ -312,7 +297,7 @@ class TestCharmConfigure:
             },
             label="ca-certificates",
             owner="app",
-            expire=datetime.now() + timedelta(days=100),
+            expire=datetime.now(timezone.utc) + timedelta(days=100),
         )
         state_in = scenario.State(
             config={
