@@ -31,7 +31,8 @@ from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 logger = logging.getLogger(__name__)
 
 
-CA_CERTIFICATES_SECRET_LABEL = "ca-certificates"
+CA_CERTIFICATES_SECRET_LABEL = "active-ca-certificates"
+EXPIRING_CA_CERTIFICATES_SECRET_LABEL = "expiring-ca-certificates"
 SEND_CA_CERT_REL_NAME = "send-ca-cert"  # Must match metadata
 CA_CERT_STORAGE = "certs"
 CA_CERT_PATH = "/tmp/ca-cert.pem"
@@ -55,15 +56,20 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
 
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
-        self.framework.observe(self.on.update_status, self._configure)
-        self.framework.observe(self.on.config_changed, self._configure)
-        self.framework.observe(self.on.secret_expired, self._configure)
-        self.framework.observe(self.on.secret_changed, self._configure)
-        self.framework.observe(self.on.certificates_relation_changed, self._configure)
+        configure_events = [
+            self.on.update_status,
+            self.on.config_changed,
+            self.on.secret_changed,
+            self.on.certificates_relation_changed,
+            self.on.secret_expired,
+        ]
+        for event in configure_events:
+            self.framework.observe(event, self._configure)
         self.framework.observe(self.on.get_ca_certificate_action, self._on_get_ca_certificate)
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
         )
+        self.framework.observe(self.on.rotate_private_key_action, self._on_rotate_private_key)
         self.framework.observe(
             self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._configure,
@@ -83,6 +89,20 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         event.add_status(ActiveStatus())
 
+    def _is_ca_cert_active(self) -> bool:
+        """Returns whether the CA certificate is active.
+
+        An active certificate is the one that has a validity that is greater
+        than the validity of the certificates to be issued.
+        """
+        if not self._root_certificate_is_stored:
+            return False
+        secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+        secret_info = secret.get_info()
+        if not secret_info.expires:
+            return False
+        return secret_info.expires.days > self._config_certificate_validity
+
     @property
     def _config_root_ca_certificate_validity(self) -> int:
         """Return Root CA certificate validity (in days).
@@ -91,6 +111,15 @@ class SelfSignedCertificatesCharm(CharmBase):
             int: Certificate validity (in days)
         """
         return int(self.model.config.get("root-ca-validity"))  # type: ignore[arg-type]
+
+    @property
+    def _ca_certificate_renewal_threshold(self) -> int:
+        """Return CA certificate renewal threshold (in days).
+
+        Returns:
+            int: Certificate validity (in days)
+        """
+        return int(self._config_root_ca_certificate_validity - self._config_certificate_validity)
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
         """Handle get-issued-certificates action.
@@ -109,6 +138,29 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         results = {"certificates": [certificate.to_json() for certificate in certificates]}
         event.set_results(results)
+
+    def _on_rotate_private_key(self, event: ActionEvent):
+        """Handle the rotate-private-key action.
+
+        Args:
+            event (ActionEvent): Juju event
+        """
+        if not self.unit.is_leader():
+            event.fail("This action can only be run on the leader unit.")
+            return
+        try:
+            expiring_ca_secret = self.model.get_secret(label=EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+            expiring_ca_secret.remove_all_revisions()
+        except SecretNotFoundError:
+            pass
+        try:
+            self._generate_root_certificate()
+        except ValueError as e:
+            logger.error("Failed to rotate private key: %s", e)
+            event.fail(f"Failed to rotate private key: {e}")
+            return
+        self.tls_certificates.revoke_all_certificates()
+        event.set_results("New private key and CA certificate generated and stored.")
 
     @property
     def _config_certificate_validity(self) -> int:
@@ -193,7 +245,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=datetime.timedelta(days=self._config_root_ca_certificate_validity),
+                expire=datetime.timedelta(days=self._ca_certificate_renewal_threshold),
             )
         logger.info("Root certificates generated and stored.")
 
@@ -211,11 +263,39 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
             self._generate_root_certificate()
+            # TODO
             self.tls_certificates.revoke_all_certificates()
             logger.info("Revoked all previously issued certificates.")
             return
+        if not self._is_ca_cert_active():
+            logger.info("CA certificate is not active, regenerating")
+            self._renew_ca()
+            return
         self._send_ca_cert()
         self._process_outstanding_certificate_requests()
+
+    # TODO what happens if the event handler fails? should we retry?
+    def _renew_ca(self):
+        """Handle secret expiration."""
+        if not self.unit.is_leader():
+            return
+        try:
+            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+            secret_content = secret.get_content(refresh=True)
+        except SecretNotFoundError:
+            return
+        try:
+            # TODO make it more clear why _config_certificate_validity is used here
+            expiring_ca_secret = self.model.get_secret(label=EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+            expiring_ca_secret.set_content(content=expiring_ca_secret.get_content(refresh=True))
+            expiring_ca_secret.set_info(expire=datetime.timedelta(days=self._config_certificate_validity))
+        except SecretNotFoundError:
+            self.app.add_secret(
+                content=secret_content,
+                label=EXPIRING_CA_CERTIFICATES_SECRET_LABEL,
+                expire=datetime.timedelta(days=self._config_certificate_validity),
+            )
+        self._generate_root_certificate()
 
     def _root_certificate_matches_config(self) -> bool:
         """Return whether the stored root certificate matches with the config."""
@@ -248,6 +328,9 @@ class SelfSignedCertificatesCharm(CharmBase):
             invalid_configs.append("root-ca-validity")
         if not self._config_certificate_validity:
             invalid_configs.append("certificate-validity")
+        if self._config_root_ca_certificate_validity < 2 * self._config_certificate_validity:
+            invalid_configs.append("certificate-validity")
+            invalid_configs.append("root-ca-validity")
         return invalid_configs
 
     def _generate_self_signed_certificate(
