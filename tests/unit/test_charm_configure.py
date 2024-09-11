@@ -18,6 +18,7 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
 from charm import CA_CERTIFICATES_SECRET_LABEL, SelfSignedCertificatesCharm
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
+ACTIVE_CA_CERTIFICATES_SECRET_LABEL = "active-ca-certificates"
 
 
 class TestCharmConfigure:
@@ -69,11 +70,13 @@ class TestCharmConfigure:
         patch_generate_ca.return_value = ca_certificate_string
         patch_generate_private_key.return_value = private_key_string
 
+        certificate_validity = 100
+        root_ca_validity = 200
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": certificate_validity,
+                "root-ca-validity": root_ca_validity,
             },
             leader=True,
         )
@@ -85,7 +88,7 @@ class TestCharmConfigure:
         assert content["private-key"] == private_key_string
         ca_certificates_secret_expiry = ca_certificates_secret.expire
         assert ca_certificates_secret_expiry
-        expected_delta = timedelta(days=200)
+        expected_delta = timedelta(days=root_ca_validity - certificate_validity)
         actual_delta = ca_certificates_secret_expiry - datetime.now()
         tolerance = timedelta(seconds=1)
         assert (
@@ -141,7 +144,7 @@ class TestCharmConfigure:
                 "ca-certificate": str(initial_ca_certificate),
                 "private-key": str(ca_private_key),
             },
-            label="ca-certificates",
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
             owner="app",
             expire=datetime.now() + timedelta(days=100),
         )
@@ -159,7 +162,7 @@ class TestCharmConfigure:
 
         state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
 
-        ca_certificates_secret = state_out.get_secret(label="ca-certificates")
+        ca_certificates_secret = state_out.get_secret(label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL)
         secret_content = ca_certificates_secret.latest_content
         assert secret_content is not None
         assert secret_content["ca-certificate"] == str(new_ca)
@@ -189,7 +192,7 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=100,
+            validity=200,
         )
         requirer_csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
         certificate = generate_certificate(
@@ -207,7 +210,7 @@ class TestCharmConfigure:
                 "ca-certificate": str(provider_ca),
                 "private-key": str(provider_private_key),
             },
-            label="ca-certificates",
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
             owner="app",
             expire=datetime.now() + timedelta(days=100),
         )
@@ -223,6 +226,7 @@ class TestCharmConfigure:
             config={
                 "ca-common-name": "example.com",
                 "certificate-validity": 100,
+                "root-ca-validity": 200,
             },
             leader=True,
             relations={tls_relation},
@@ -260,7 +264,7 @@ class TestCharmConfigure:
                 "ca-certificate": "whatever initial CA certificate",
                 "private-key": private_key_string,
             },
-            label="ca-certificates",
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
             owner="app",
             expire=datetime.now(),
         )
@@ -277,7 +281,9 @@ class TestCharmConfigure:
             self.ctx.on.secret_expired(secret=ca_certificates_secret, revision=1), state=state_in
         )
 
-        ca_certificates_secret = state_out.get_secret(label="ca-certificates").latest_content
+        ca_certificates_secret = state_out.get_secret(
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL
+        ).latest_content
 
         assert ca_certificates_secret is not None
         assert ca_certificates_secret["ca-certificate"] == ca_certificate_string
@@ -310,7 +316,7 @@ class TestCharmConfigure:
                 "ca-certificate": str(initial_ca_certificate),
                 "private-key": str(initial_ca_private_key),
             },
-            label="ca-certificates",
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
             owner="app",
             expire=datetime.now() + timedelta(days=100),
         )
@@ -325,7 +331,9 @@ class TestCharmConfigure:
 
         state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
 
-        ca_certificates_secret = state_out.get_secret(label="ca-certificates").latest_content
+        ca_certificates_secret = state_out.get_secret(
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL
+        ).latest_content
         assert ca_certificates_secret is not None
         assert ca_certificates_secret["ca-certificate"] == str(new_ca_certificate)
         assert ca_certificates_secret["private-key"] == str(new_ca_private_key)
@@ -343,15 +351,16 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=100,
+            validity=200,
         )
         secret = scenario.Secret(
             {
                 "ca-certificate": str(provider_ca),
                 "private-key": str(provider_private_key),
             },
-            label="ca-certificates",
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
             owner="app",
+            expire=datetime.now() + timedelta(days=100),
         )
         state_in = scenario.State(
             relations={traefik_relation, another_relation},
@@ -360,6 +369,7 @@ class TestCharmConfigure:
             config={
                 "ca-common-name": "example.com",
                 "certificate-validity": 100,
+                "root-ca-validity": 200,
             },
         )
 

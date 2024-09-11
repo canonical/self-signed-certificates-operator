@@ -2,6 +2,8 @@
 # See LICENSE file for licensing details.
 
 
+from datetime import datetime, timedelta
+
 import pytest
 import scenario
 
@@ -23,8 +25,9 @@ class TestCharmGetCACertificate:
             {
                 "ca-certificate": ca_certificate,
             },
-            label="ca-certificates",
+            label="active-ca-certificates",
             owner="app",
+            expire=datetime.now() + timedelta(days=100),
         )
         state_in = scenario.State(
             leader=True,
