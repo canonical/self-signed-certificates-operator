@@ -21,7 +21,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
         )
@@ -36,7 +36,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 0,
+                "certificate-validity": "0",
             },
             leader=True,
         )
@@ -59,7 +59,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
         )

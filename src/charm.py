@@ -4,8 +4,8 @@
 
 """Self Signed X.509 Certificates."""
 
-import datetime
 import logging
+from datetime import timedelta
 from typing import Optional, cast
 
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
@@ -84,13 +84,17 @@ class SelfSignedCertificatesCharm(CharmBase):
         event.add_status(ActiveStatus())
 
     @property
-    def _config_root_ca_certificate_validity(self) -> int:
-        """Return Root CA certificate validity (in days).
+    def _config_root_ca_certificate_validity(self) -> timedelta | None:
+        """Return Root CA certificate validity.
 
         Returns:
-            int: Certificate validity (in days)
+            int: Certificate validity
         """
-        return int(self.model.config.get("root-ca-validity"))  # type: ignore[arg-type]
+        try:
+            validity = parse_time_string(str(self.model.config.get("root-ca-validity", "")))
+        except ValueError:
+            return None
+        return validity
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
         """Handle get-issued-certificates action.
@@ -111,13 +115,17 @@ class SelfSignedCertificatesCharm(CharmBase):
         event.set_results(results)
 
     @property
-    def _config_certificate_validity(self) -> int:
-        """Returns certificate validity (in days).
+    def _config_certificate_validity(self) -> timedelta | None:
+        """Returns certificate validity (in seconds).
 
         Returns:
-            int: Certificate validity (in days)
+            int: Certificate validity (in seconds)
         """
-        return int(self.model.config.get("certificate-validity"))  # type: ignore[arg-type]
+        try:
+            validity = parse_time_string(str(self.model.config.get("certificate-validity", "")))
+        except ValueError:
+            return None
+        return validity
 
     @property
     def _config_ca_common_name(self) -> Optional[str]:
@@ -179,7 +187,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             country_name=self._config_ca_country_name,
             state_or_province_name=self._config_ca_state_or_province_name,
             locality_name=self._config_ca_locality_name,
-            validity=self._config_root_ca_certificate_validity,
+            validity=self._config_root_ca_certificate_validity or timedelta(days=365),
         )
         self._push_ca_cert_to_container(str(ca_certificate))
         secret_content = {
@@ -190,10 +198,11 @@ class SelfSignedCertificatesCharm(CharmBase):
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret.set_content(content=secret_content)
         else:
+            logger.warning(self._config_root_ca_certificate_validity)
             self.app.add_secret(
                 content=secret_content,
                 label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=datetime.timedelta(days=self._config_root_ca_certificate_validity),
+                expire=self._config_root_ca_certificate_validity or timedelta(days=365),
             )
         logger.info("Root certificates generated and stored.")
 
@@ -267,7 +276,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             ca=ca_certificate,
             ca_private_key=PrivateKey.from_string(ca_certificate_secret_content["private-key"]),
             csr=csr,
-            validity=self._config_certificate_validity,
+            validity=self._config_certificate_validity or timedelta(days=365),
             is_ca=is_ca,
         )
         self.tls_certificates.set_relation_certificate(
@@ -323,6 +332,30 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         with open(CA_CERT_PATH, "w") as f:
             f.write(ca_certificate)
+
+
+def parse_time_string(time_str: str) -> timedelta:
+    """Parse a given time string.
+
+    It must be a number followed by either an
+    s for seconds, h for hours, d for days or y for years.
+
+    Args:
+        time_str: the input string. Ex: "15s", "365d", "10y"
+    Returns:
+        timedelta object representing the given string
+    """
+    value, unit = int(time_str[:-1]), time_str[-1]
+    if unit == "s":
+        return timedelta(seconds=value)
+    elif unit == "h":
+        return timedelta(hours=value)
+    elif unit == "d":
+        return timedelta(days=value)
+    elif unit == "y":
+        return timedelta(days=365 * value)
+    else:
+        raise ValueError(f"Unsupported time unit: {unit}")
 
 
 if __name__ == "__main__":

@@ -96,13 +96,21 @@ config:
       type: string
       description: Locality name to be used by the Certificate Authority.
     root-ca-validity:
-      type: int
-      default: 365
-      description: RootCA certificate validity (in days).
+      type: string
+      default: 365d
+      description: >
+        RootCA certificate validity. 
+        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "y" for years. 
+        For example, "15s" for 15 seconds, "10y" for 10 years. 
+        Defaults to 365 days.
     certificate-validity:
-      type: int
-      default: 365
-      description: Certificate validity (in days).
+      type: string
+      default: 365d
+      description: >
+        Signed certificate validity.
+        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "y" for years. 
+        For example, "15s" for 15 seconds, "10y" for 10 years. 
+        Defaults to 365 days.
 
 actions:
   get-ca-certificate:

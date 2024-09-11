@@ -47,8 +47,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100d",
+                "root-ca-validity": "200d",
             },
             leader=True,
         )
@@ -72,8 +72,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100d",
+                "root-ca-validity": "200d",
             },
             leader=True,
         )
@@ -106,7 +106,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
             secrets=frozenset(),
@@ -127,12 +127,12 @@ class TestCharmConfigure:
         initial_ca_certificate = generate_ca(
             private_key=ca_private_key,
             common_name="initial.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         new_ca = generate_ca(
             private_key=ca_private_key,
             common_name="new.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         patch_generate_ca.return_value = new_ca
         patch_generate_private_key.return_value = ca_private_key
@@ -151,7 +151,7 @@ class TestCharmConfigure:
                 "ca-email-address": "abc@example.com",
                 "ca-country-name": "CA",
                 "ca-locality-name": "Montreal",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -172,7 +172,7 @@ class TestCharmConfigure:
             country_name="CA",
             state_or_province_name=None,
             locality_name="Montreal",
-            validity=365,
+            validity=timedelta(days=365),
         )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
@@ -189,14 +189,14 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=100,
+            validity=timedelta(100),
         )
         requirer_csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
         certificate = generate_certificate(
             csr=requirer_csr,
             ca=provider_ca,
             ca_private_key=provider_private_key,
-            validity=100,
+            validity=timedelta(100),
         )
         tls_relation = scenario.Relation(
             endpoint="certificates",
@@ -222,7 +222,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
             relations={tls_relation},
@@ -267,7 +267,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -295,12 +295,12 @@ class TestCharmConfigure:
         initial_ca_certificate = generate_ca(
             private_key=initial_ca_private_key,
             common_name="common-name-initial.example.com",
-            validity=100,
+            validity=timedelta(100),
         )
         new_ca_certificate = generate_ca(
             private_key=new_ca_private_key,
             common_name="common-name-new.example.com",
-            validity=100,
+            validity=timedelta(100),
         )
         patch_generate_ca.return_value = new_ca_certificate
         patch_generate_private_key.return_value = new_ca_private_key
@@ -317,7 +317,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "common-name-new.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -343,7 +343,7 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=100,
+            validity=timedelta(100),
         )
         secret = scenario.Secret(
             {
@@ -359,7 +359,7 @@ class TestCharmConfigure:
             leader=True,
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100d",
             },
         )
 
