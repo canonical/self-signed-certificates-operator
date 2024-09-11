@@ -47,8 +47,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": "100d",
-                "root-ca-validity": "200d",
+                "certificate-validity-duration": "100d",
+                "root-ca-validity-duration": "200d",
             },
             leader=True,
         )
@@ -72,8 +72,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": "100d",
-                "root-ca-validity": "200d",
+                "certificate-validity-duration": "100d",
+                "root-ca-validity-duration": "200d",
             },
             leader=True,
         )
@@ -106,7 +106,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
             secrets=frozenset(),
@@ -151,7 +151,7 @@ class TestCharmConfigure:
                 "ca-email-address": "abc@example.com",
                 "ca-country-name": "CA",
                 "ca-locality-name": "Montreal",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -222,7 +222,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
             relations={tls_relation},
@@ -267,7 +267,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -317,7 +317,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "common-name-new.example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -359,7 +359,7 @@ class TestCharmConfigure:
             leader=True,
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
         )
 
@@ -371,3 +371,38 @@ class TestCharmConfigure:
         assert state_out.get_relation(another_relation.id).local_unit_data["ca"] == str(
             provider_ca
         )
+
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_ca")
+    def test_given_valid_deprecated_config_when_config_changed_then_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_private_key,
+    ):
+        ca_certificate_string = "whatever CA certificate"
+        private_key_string = "whatever private key"
+        patch_generate_ca.return_value = ca_certificate_string
+        patch_generate_private_key.return_value = private_key_string
+
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.example.com",
+                "certificate-validity": 100,
+                "root-ca-validity": 200,
+            },
+            leader=True,
+        )
+
+        state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
+        ca_certificates_secret = state_out.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+        content = ca_certificates_secret.tracked_content
+        assert content["ca-certificate"] == ca_certificate_string
+        assert content["private-key"] == private_key_string
+        ca_certificates_secret_expiry = ca_certificates_secret.expire
+        assert ca_certificates_secret_expiry
+        expected_delta = timedelta(days=200)
+        actual_delta = ca_certificates_secret_expiry - datetime.now()
+        tolerance = timedelta(seconds=1)
+        assert (
+            abs(actual_delta - expected_delta) <= tolerance
+        ), f"Expected: {expected_delta}, but got: {actual_delta}"

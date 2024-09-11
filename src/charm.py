@@ -90,8 +90,17 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             int: Certificate validity
         """
+        deprecated_validity = self.model.config.get("root-ca-validity")
+        if deprecated_validity:
+            logger.warning(
+                "DEPRECATED: the root-ca-validity option is deprecated."
+                "Please update your charm configuration."
+            )
+            return timedelta(days=int(deprecated_validity))
         try:
-            validity = parse_time_string(str(self.model.config.get("root-ca-validity", "")))
+            validity = parse_time_string(
+                str(self.model.config.get("root-ca-validity-duration", ""))
+            )
         except ValueError:
             logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
@@ -122,8 +131,17 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             int: Certificate validity (in seconds)
         """
+        deprecated_validity = self.model.config.get("certificate-validity")
+        if deprecated_validity:
+            logger.warning(
+                "DEPRECATED: the certificate-validity option is deprecated."
+                "Please update your charm configuration."
+            )
+            return timedelta(days=int(deprecated_validity))
         try:
-            validity = parse_time_string(str(self.model.config.get("certificate-validity", "")))
+            validity = parse_time_string(
+                str(self.model.config.get("certificate-validity-duration", ""))
+            )
         except ValueError:
             logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
@@ -257,7 +275,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not self._config_root_ca_certificate_validity:
             invalid_configs.append("root-ca-validity")
         if not self._config_certificate_validity:
-            invalid_configs.append("certificate-validity")
+            invalid_configs.append("certificate-validity-duration")
         return invalid_configs
 
     def _generate_self_signed_certificate(

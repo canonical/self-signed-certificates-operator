@@ -71,7 +71,7 @@ class TestCharmGetIssuedCertificates:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": "100d",
+                "certificate-validity-duration": "100d",
             },
             leader=True,
         )
