@@ -130,12 +130,12 @@ class TestCharmConfigure:
         initial_ca_certificate = generate_ca(
             private_key=ca_private_key,
             common_name="initial.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         new_ca = generate_ca(
             private_key=ca_private_key,
             common_name="new.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         patch_generate_ca.return_value = new_ca
         patch_generate_private_key.return_value = ca_private_key
@@ -155,6 +155,7 @@ class TestCharmConfigure:
                 "ca-country-name": "CA",
                 "ca-locality-name": "Montreal",
                 "certificate-validity": 100,
+                "root-ca-validity": 200,
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -175,8 +176,57 @@ class TestCharmConfigure:
             country_name="CA",
             state_or_province_name=None,
             locality_name="Montreal",
-            validity=365,
+            validity=timedelta(days=200),
         )
+
+    @patch("charm.generate_private_key")
+    @patch("charm.generate_ca")
+    def test_given_root_ca_about_to_expire_then_root_ca_is_marked_expiring_and_new_one_is_generated(  # noqa: E501
+        self,
+        patch_generate_ca,
+        patch_generate_private_key,
+    ):
+        old_ca_private_key = generate_private_key()
+        new_ca_private_key = generate_private_key()
+        initial_ca_certificate = generate_ca(
+            private_key=old_ca_private_key,
+            common_name="initial.example.com",
+            validity=timedelta(seconds=60),
+        )
+        new_ca = generate_ca(
+            private_key=new_ca_private_key,
+            common_name="new.example.com",
+            validity=timedelta(seconds=60),
+        )
+        patch_generate_ca.return_value = new_ca
+        patch_generate_private_key.return_value = new_ca_private_key
+        ca_certificate_secret = scenario.Secret(
+            {
+                "ca-certificate": str(initial_ca_certificate),
+                "private-key": str(old_ca_private_key),
+            },
+            label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL,
+            owner="app",
+            expire=datetime.now() + timedelta(seconds=30),
+        )
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.example.com",
+                "root-ca-validity": 60,
+                "certificate-validity": 30,
+                "validity-unit": "seconds",
+            },
+            leader=True,
+            secrets={ca_certificate_secret},
+        )
+
+        state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
+
+        ca_certificates_secret = state_out.get_secret(label=ACTIVE_CA_CERTIFICATES_SECRET_LABEL)
+        secret_content = ca_certificates_secret.latest_content
+        assert secret_content is not None
+        assert secret_content["ca-certificate"] == str(new_ca)
+        assert secret_content["private-key"] == str(new_ca_private_key)
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
@@ -192,14 +242,14 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=200,
+            validity=timedelta(days=200),
         )
         requirer_csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
         certificate = generate_certificate(
             csr=requirer_csr,
             ca=provider_ca,
             ca_private_key=provider_private_key,
-            validity=100,
+            validity=timedelta(days=100),
         )
         tls_relation = scenario.Relation(
             endpoint="certificates",
@@ -301,12 +351,12 @@ class TestCharmConfigure:
         initial_ca_certificate = generate_ca(
             private_key=initial_ca_private_key,
             common_name="common-name-initial.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         new_ca_certificate = generate_ca(
             private_key=new_ca_private_key,
             common_name="common-name-new.example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         patch_generate_ca.return_value = new_ca_certificate
         patch_generate_private_key.return_value = new_ca_private_key
@@ -351,7 +401,7 @@ class TestCharmConfigure:
         provider_ca = generate_ca(
             private_key=provider_private_key,
             common_name="example.com",
-            validity=200,
+            validity=timedelta(days=200),
         )
         secret = scenario.Secret(
             {

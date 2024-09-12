@@ -44,7 +44,23 @@ class TestCharmCollectStatus:
         state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == BlockedStatus(
-            "The following configuration values are not valid: ['certificate-validity']"
+            "The following configuration values are not valid: ['certificate-validity', 'root-ca-validity']"
+        )
+
+    def test_given_invalid_root_ca_validity_config_when_collect_unit_status_then_status_is_blocked(self):
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.example.com",
+                "certificate-validity": 100,
+                "root-ca-validity": 0,
+            },
+            leader=True,
+        )
+
+        state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
+
+        assert state_out.unit_status == BlockedStatus(
+            "The following configuration values are not valid: ['certificate-validity', 'root-ca-validity']"
         )
 
     @patch("charm.generate_private_key")
