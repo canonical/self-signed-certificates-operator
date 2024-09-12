@@ -25,7 +25,7 @@ CA_COMMON_NAME = "example.com"
 ARCH = "arm64" if platform.machine() == "aarch64" else "amd64"
 
 
-async def wait_for_requirer_ca_certificate(ops_test: OpsTest, ca_common_name: str) -> None:
+async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str) -> Dict[str, str]:
     """Wait for the certificate to be provided to the `tls-requirer-requirer/0` unit."""
     t0 = time.time()
     timeout = 300
@@ -41,7 +41,7 @@ async def wait_for_requirer_ca_certificate(ops_test: OpsTest, ca_common_name: st
             logger.info("Existing CA Common Name: %s", existing_ca_common_name)
             continue
         logger.info("Certificate with CA common name %s provided", ca_common_name)
-        return
+        return action_output
     raise TimeoutError("Timed out waiting for certificate")
 
 
@@ -58,7 +58,17 @@ async def deploy(ops_test: OpsTest, request):
         application_name=APP_NAME,
         series="jammy",
         trust=True,
-        config={"ca-common-name": CA_COMMON_NAME},
+        config={
+            "ca-common-name": CA_COMMON_NAME,
+            "root-ca-validity": 200,
+            "certificate-validity": 100,
+            "ca-email-address": "test@example.com",
+            "ca-country-name": "US",
+            "ca-state-or-province-name": "California",
+            "ca-locality-name": "San Francisco",
+            "ca-organization": "Example Org",
+            "ca-organizational-unit": "Example Unit",
+        },
         constraints={"arch": ARCH},
     )
     await ops_test.model.deploy(
@@ -95,7 +105,7 @@ async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_i
         status="active",
         timeout=1000,
     )
-    await wait_for_requirer_ca_certificate(ops_test=ops_test, ca_common_name=CA_COMMON_NAME)
+    await wait_for_requirer_certificates(ops_test=ops_test, ca_common_name=CA_COMMON_NAME)
 
 
 async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_changed_then_new_certificate_is_provided(  # noqa: E501
@@ -113,7 +123,45 @@ async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_chang
         timeout=1000,
     )
 
-    await wait_for_requirer_ca_certificate(ops_test=ops_test, ca_common_name=new_common_name)
+    await wait_for_requirer_certificates(ops_test=ops_test, ca_common_name=new_common_name)
+
+
+async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_new_certificate_is_provided(  # noqa: E501
+    ops_test: OpsTest,
+    deploy,
+):
+    new_common_name = "newexample.org"
+    assert ops_test.model
+    application = ops_test.model.applications[APP_NAME]
+    assert application
+    await application.set_config(
+        {
+            "root-ca-validity": 60,
+            "certificate-validity": 30,
+            "validity-unit": "seconds",
+        }
+    )
+    await ops_test.model.wait_for_idle(
+        apps=[APP_NAME, TLS_REQUIRER_CHARM_NAME],
+        status="active",
+        timeout=1000,
+    )
+
+    action_output = await wait_for_requirer_certificates(
+        ops_test=ops_test, ca_common_name=new_common_name
+    )
+    old_certificate = action_output.get("ca-certificate", "")
+
+    assert old_certificate
+
+    time.sleep(30)
+
+    action_output = await wait_for_requirer_certificates(
+        ops_test=ops_test, ca_common_name=new_common_name
+    )
+    new_certificate = action_output.get("ca-certificate", "")
+    assert new_certificate
+    assert new_certificate != old_certificate
 
 
 async def test_given_charm_scaled_then_charm_does_not_crash(

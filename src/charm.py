@@ -94,7 +94,9 @@ class SelfSignedCertificatesCharm(CharmBase):
         secret_info = secret.get_info()
         if not secret_info.expires:
             return False
-        return secret_info.expires > datetime.now()
+        if secret_info.expires.tzinfo is None:
+            return secret_info.expires > datetime.now()
+        return secret_info.expires > datetime.now(secret_info.expires.tzinfo)
 
     @property
     def _config_root_ca_certificate_validity(self) -> timedelta:
