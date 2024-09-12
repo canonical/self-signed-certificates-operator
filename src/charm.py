@@ -69,8 +69,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.framework.observe(
             self.on.get_issued_certificates_action, self._on_get_issued_certificates
         )
-        # TODO: can be in a different PR
-        self.framework.observe(self.on.rotate_private_key_action, self._on_rotate_private_key)
         self.framework.observe(
             self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._configure,
@@ -191,7 +189,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         else:
             return timedelta(days=value)
 
-
     @property
     def _config_ca_common_name(self) -> Optional[str]:
         return cast(Optional[str], self.model.config.get("ca-common-name", None))
@@ -283,14 +280,11 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         if self._invalid_configs():
             return
-        # Test that both active and expiring secrets are removed when config is changed
         if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
             self._revoke_certificates()
             self._generate_root_certificate()
             logger.info("Revoked all previously issued certificates.")
             return
-        # Test that secret has expired then a new certificate is generated and the old one is stored in the expiring secret
-        # Test that the expiring secret's expiry date is the same as the issued certificates validity
         if not self._is_ca_cert_active():
             logger.info("Renewing CA certificate")
             self._renew_root_certificate()
@@ -341,7 +335,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         except SecretNotFoundError:
             self.app.add_secret(content=content, label=label, expire=expire)
 
-    # Test that any config change trigger CA to change
     def _root_certificate_matches_config(self) -> bool:
         """Return whether the stored root certificate matches with the config."""
         if not self._config_ca_common_name:
@@ -366,7 +359,6 @@ class SelfSignedCertificatesCharm(CharmBase):
             and self._config_root_ca_certificate_validity == certificate_validity
         )
 
-    # Test that when certificates are revoked, the active and expiring secrets are removed
     def _revoke_certificates(self):
         """Revoke all certificates.
 
@@ -393,7 +385,6 @@ class SelfSignedCertificatesCharm(CharmBase):
                 relation_id=request.relation_id,
             )
 
-    # Test that root-ca-validity is twice more than certificate-validity
     def _invalid_configs(self) -> list[str]:
         """Return list of invalid configurations.
 
