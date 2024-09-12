@@ -21,7 +21,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "",
-                "certificate-validity-duration": "100d",
+                "certificate-validity": "100d",
             },
             leader=True,
         )
@@ -36,7 +36,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity-duration": "0",
+                "certificate-validity": "0",
             },
             leader=True,
         )
@@ -44,7 +44,7 @@ class TestCharmCollectStatus:
         state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == BlockedStatus(
-            "The following configuration values are not valid: ['certificate-validity-duration']"
+            "The following configuration values are not valid: ['certificate-validity']"
         )
 
     @patch("charm.generate_private_key")
@@ -59,7 +59,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity-duration": "100d",
+                "certificate-validity": "100d",
             },
             leader=True,
         )

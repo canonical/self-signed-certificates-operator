@@ -90,17 +90,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             int: Certificate validity
         """
-        deprecated_validity = self.model.config.get("root-ca-validity")
-        if deprecated_validity:
-            logger.warning(
-                "DEPRECATED: the root-ca-validity option is deprecated."
-                "Please update your charm configuration."
-            )
-            return timedelta(days=int(deprecated_validity))
         try:
-            validity = parse_time_string(
-                str(self.model.config.get("root-ca-validity-duration", ""))
-            )
+            validity = parse_time_string(str(self.model.config.get("root-ca-validity", "")))
         except ValueError:
             logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
@@ -131,17 +122,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         Returns:
             int: Certificate validity (in seconds)
         """
-        deprecated_validity = self.model.config.get("certificate-validity")
-        if deprecated_validity:
-            logger.warning(
-                "DEPRECATED: the certificate-validity option is deprecated."
-                "Please update your charm configuration."
-            )
-            return timedelta(days=int(deprecated_validity))
         try:
-            validity = parse_time_string(
-                str(self.model.config.get("certificate-validity-duration", ""))
-            )
+            validity = parse_time_string(str(self.model.config.get("certificate-validity", "")))
         except ValueError:
             logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
@@ -275,7 +257,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not self._config_root_ca_certificate_validity:
             invalid_configs.append("root-ca-validity")
         if not self._config_certificate_validity:
-            invalid_configs.append("certificate-validity-duration")
+            invalid_configs.append("certificate-validity")
         return invalid_configs
 
     def _generate_self_signed_certificate(
@@ -373,8 +355,9 @@ def parse_time_string(time_str: str) -> timedelta:
         return timedelta(days=value)
     elif unit == "y":
         return timedelta(days=365 * value)
-    else:
-        raise ValueError(f"Unsupported time unit: {unit}")
+    elif time_str.isnumeric():
+        return timedelta(days=int(time_str))
+    raise ValueError(f"unsupported time string format: {time_str}")
 
 
 if __name__ == "__main__":
