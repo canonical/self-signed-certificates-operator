@@ -327,7 +327,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
 
     def _set_juju_secret(self, label: str, content: dict[str, str], expire: timedelta) -> None:
-        """Set a juju secret."""
+        """Create or update a juju secret."""
         try:
             secret = self.model.get_secret(label=label)
             secret.set_content(content=content)

@@ -101,7 +101,7 @@ config:
       description: RootCA certificate validity (in days), should longer than twice of certificate-validity. Changing this value will trigger generation of a new CA certificate.
     certificate-validity:
       type: int
-      default: 365
+      default: 90
       description: Certificate validity (in days) must be shorter than half the root-ca-validity. Changing this value will trigger generation of a new CA certificate.
     validity-unit:
       type: string
