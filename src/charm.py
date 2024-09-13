@@ -151,12 +151,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not self.unit.is_leader():
             event.fail("This action can only be run on the leader unit.")
             return
-        self._revoke_certificates()
+        self.tls_certificates.revoke_all_certificates()
+        self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+        logger.info("Revoked all previously issued certificates.")
         try:
             self._generate_root_certificate()
         except ValueError as e:
             logger.error("Failed to rotate private key: %s", e)
-            event.fail(f"Failed to rotate private key: {e}")
+            event.fail(f"Failed to rotate private key, please try again: {e}")
             return
         event.set_results({"result": "New private key and CA certificate generated and stored."})
 
@@ -283,7 +285,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         if self._invalid_configs():
             return
         if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
-            self._revoke_certificates()
+            self.tls_certificates.revoke_all_certificates()
+            self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
             self._generate_root_certificate()
             logger.info("Revoked all previously issued certificates.")
             return
@@ -361,22 +364,14 @@ class SelfSignedCertificatesCharm(CharmBase):
             and self._config_root_ca_certificate_validity == certificate_validity
         )
 
-    def _revoke_certificates(self):
-        """Revoke all certificates.
-
-        Revokes both root and issued certificates.
-        """
+    def _clean_up_juju_secret(self, label: str):
+        """Remove the secret with the given label."""
         try:
-            expiring_ca_secret = self.model.get_secret(label=EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+            expiring_ca_secret = self.model.get_secret(label=label)
             expiring_ca_secret.remove_all_revisions()
         except SecretNotFoundError:
-            pass
-        try:
-            active_ca_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-            active_ca_secret.remove_all_revisions()
-        except SecretNotFoundError:
-            pass
-        self.tls_certificates.revoke_all_certificates()
+            return
+        return
 
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""
