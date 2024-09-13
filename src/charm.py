@@ -332,6 +332,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             secret = self.model.get_secret(label=label)
             secret.set_content(content=content)
             secret.set_info(expire=expire)
+            secret.get_content(refresh=True)
         except SecretNotFoundError:
             self.app.add_secret(content=content, label=label, expire=expire)
 
