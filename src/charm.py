@@ -260,17 +260,11 @@ class SelfSignedCertificatesCharm(CharmBase):
             "private-key": str(private_key),
             "ca-certificate": str(ca_certificate),
         }
-        if self._root_certificate_is_stored:
-            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
-            secret.set_content(content=secret_content)
-            secret.set_info(expire=self._ca_certificate_renewal_threshold)
-            secret.get_content(refresh=True)
-        else:
-            self.app.add_secret(
-                content=secret_content,
-                label=CA_CERTIFICATES_SECRET_LABEL,
-                expire=self._ca_certificate_renewal_threshold,
-            )
+        self._set_juju_secret(
+            label=CA_CERTIFICATES_SECRET_LABEL,
+            content=secret_content,
+            expire=self._ca_certificate_renewal_threshold,
+        )
         logger.info("Root certificates generated and stored.")
 
     def _configure(self, _: EventBase) -> None:
@@ -341,6 +335,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         except SecretNotFoundError:
             self.app.add_secret(content=content, label=label, expire=expire)
 
+    # TODO
     def _root_certificate_matches_config(self) -> bool:
         """Return whether the stored root certificate matches with the config."""
         if not self._config_ca_common_name:
