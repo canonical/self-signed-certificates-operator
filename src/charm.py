@@ -263,6 +263,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         if self._root_certificate_is_stored:
             secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
             secret.set_content(content=secret_content)
+            secret.set_info(expire=self._ca_certificate_renewal_threshold)
             secret.get_content(refresh=True)
         else:
             self.app.add_secret(
