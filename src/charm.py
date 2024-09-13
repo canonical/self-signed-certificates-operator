@@ -229,7 +229,9 @@ class SelfSignedCertificatesCharm(CharmBase):
             bool: Whether certificates are stored..
         """
         try:
-            self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+            secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
+            if not secret.get_info().expires:
+                return False
             return True
         except SecretNotFoundError:
             return False
@@ -331,8 +333,9 @@ class SelfSignedCertificatesCharm(CharmBase):
         try:
             secret = self.model.get_secret(label=label)
             secret.set_content(content=content)
-            secret.set_info(expire=expire)
             secret.get_content(refresh=True)
+            new_rev = self.model.get_secret(label=label)
+            new_rev.set_info(expire=expire)
         except SecretNotFoundError:
             self.app.add_secret(content=content, label=label, expire=expire)
 
