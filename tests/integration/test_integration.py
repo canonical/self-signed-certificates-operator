@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 
+import json
 import logging
 import platform
 import time
@@ -26,22 +27,32 @@ ARCH = "arm64" if platform.machine() == "aarch64" else "amd64"
 
 
 async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str) -> Dict[str, str]:
-    """Wait for the certificate to be provided to the `tls-requirer-requirer/0` unit."""
+    """Wait for the certificate to be provided to the `tls-requirer-requirer/0` unit.
+
+    Checks that CA certificate common name is the one expected.
+    Returns the certificate output from the get-certificate action if successful.
+    Otherwise, times out and raises a TimeoutError.
+    """
     t0 = time.time()
     timeout = 300
     while time.time() - t0 < timeout:
         logger.info("Waiting for CA certificate with common name %s", ca_common_name)
         time.sleep(5)
         action_output = await run_get_certificate_action(ops_test)
-        ca_certificate = action_output.get("ca-certificate", "")
-        if not ca_certificate:
+        try:
+            certificates = json.loads(action_output.get("certificates", ""))[0]
+        except json.JSONDecodeError:
+            continue
+        ca_certificate = certificates.get("ca-certificate", "")
+        certificate = certificates.get("certificate", "")
+        if not ca_certificate or not certificate:
             continue
         existing_ca_common_name = get_common_name_from_certificate(ca_certificate.encode())
         if existing_ca_common_name != ca_common_name:
             logger.info("Existing CA Common Name: %s", existing_ca_common_name)
             continue
         logger.info("Certificate with CA common name %s provided", ca_common_name)
-        return action_output
+        return certificates
     raise TimeoutError("Timed out waiting for certificate")
 
 
@@ -74,7 +85,7 @@ async def deploy(ops_test: OpsTest, request):
     await ops_test.model.deploy(
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
-        channel="stable",
+        channel="latest/edge",
         constraints={"arch": ARCH},
     )
 
@@ -136,8 +147,8 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     assert application
     await application.set_config(
         {
-            "root-ca-validity": "90s",
-            "certificate-validity": "30s",
+            "root-ca-validity": "180s",
+            "certificate-validity": "60s",
         }
     )
     await ops_test.model.wait_for_idle(
@@ -154,7 +165,7 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     assert old_certificate
 
     # Wait for the certificate to expire
-    time.sleep(35)
+    time.sleep(60)
 
     action_output = await wait_for_requirer_certificates(
         ops_test=ops_test, ca_common_name=new_common_name
