@@ -385,6 +385,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             if certificate.validity_start_time and certificate.expiry_time
             else timedelta(days=0)
         )
+
         return (
             self._config_ca_common_name == certificate.common_name
             and self._config_ca_organization == certificate.organization

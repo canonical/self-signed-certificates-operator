@@ -121,8 +121,8 @@ config:
       default: 365d
       description: >
         RootCA certificate validity. 
-        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "y" for years. 
-        For example, "15s" for 15 seconds, "10y" for 10 years. 
+        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "15s" for 15 seconds, "10w" for 10 weeks. 
         If no units are given, the unit will be assumed as days.
         Defaults to 365 days.
         This value should be longer than twice the certificate-validity.
@@ -133,10 +133,10 @@ config:
       default: 90d
       description: > 
         Signed certificate validity.
-        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "y" for years. 
-        For example, "15s" for 15 seconds, "10y" for 10 years. 
+        The given value must be followed by one of: "s" for seconds, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "15s" for 15 seconds, "10w" for 10 weeks. 
         If no units are given, the unit will be assumed as days.
-        Defaults to 365 days.
+        Defaults to 90 days.
         This value should be longer than twice the certificate-validity.
         Changing this value will trigger generation of a new CA certificate,
         revoking all previously issued certificates.
