@@ -60,8 +60,8 @@ async def deploy(ops_test: OpsTest, request):
         trust=True,
         config={
             "ca-common-name": CA_COMMON_NAME,
-            "root-ca-validity": 200,
-            "certificate-validity": 100,
+            "root-ca-validity": "200",
+            "certificate-validity": "100",
             "ca-email-address": "test@example.com",
             "ca-country-name": "US",
             "ca-state-or-province-name": "California",
@@ -136,9 +136,8 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     assert application
     await application.set_config(
         {
-            "root-ca-validity": 60,
-            "certificate-validity": 30,
-            "validity-unit": "seconds",
+            "root-ca-validity": "60s",
+            "certificate-validity": "30s",
         }
     )
     await ops_test.model.wait_for_idle(

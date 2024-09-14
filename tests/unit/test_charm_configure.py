@@ -50,8 +50,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
             },
             leader=True,
         )
@@ -77,8 +77,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": certificate_validity,
-                "root-ca-validity": root_ca_validity,
+                "certificate-validity": str(certificate_validity),
+                "root-ca-validity": str(root_ca_validity),
             },
             leader=True,
         )
@@ -111,7 +111,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
             secrets=frozenset(),
@@ -156,8 +156,8 @@ class TestCharmConfigure:
                 "ca-email-address": "abc@example.com",
                 "ca-country-name": "CA",
                 "ca-locality-name": "Montreal",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -214,9 +214,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "root-ca-validity": 60,
-                "certificate-validity": 30,
-                "validity-unit": "seconds",
+                "root-ca-validity": "60s",
+                "certificate-validity": "30s",
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -291,8 +290,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
             },
             leader=True,
             relations={tls_relation},
@@ -337,7 +336,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -389,7 +388,7 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "common-name-new.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
             secrets={ca_certificates_secret},
@@ -434,8 +433,8 @@ class TestCharmConfigure:
             leader=True,
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": 100,
-                "root-ca-validity": 200,
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
             },
         )
 

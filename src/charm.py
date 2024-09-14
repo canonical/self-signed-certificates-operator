@@ -100,24 +100,39 @@ class SelfSignedCertificatesCharm(CharmBase):
         return secret_info.expires > datetime.now(secret_info.expires.tzinfo)
 
     @property
-    def _config_root_ca_certificate_validity(self) -> timedelta:
-        """Return Root CA certificate validity (timedelta)."""
-        return self._int_config_to_timedelta(
-            int(self.model.config.get("root-ca-validity")),  # type: ignore[arg-type]
-            self._config_validity_unit,
-        )
-
-    @property
-    def _config_validity_unit(self) -> str:
-        """Return Validity unit.
+    def _config_root_ca_certificate_validity(self) -> timedelta | None:
+        """Return Root CA certificate validity.
 
         Returns:
-            str: Validity unit.
+            int: Certificate validity
         """
-        return str(self.model.config.get("validity-unit", "days"))
+        try:
+            validity = self._parse_config_time_string(
+                str(self.model.config.get("root-ca-validity", ""))
+            )
+        except ValueError:
+            logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
+            return None
+        return validity
 
     @property
-    def _ca_certificate_renewal_threshold(self) -> timedelta:
+    def _config_certificate_validity(self) -> timedelta | None:
+        """Returns certificate validity (in seconds).
+
+        Returns:
+            int: Certificate validity (in seconds)
+        """
+        try:
+            validity = self._parse_config_time_string(
+                str(self.model.config.get("certificate-validity", ""))
+            )
+        except ValueError:
+            logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
+            return None
+        return validity
+
+    @property
+    def _ca_certificate_renewal_threshold(self) -> timedelta | None:
         """Return CA certificate renewal threshold.
 
         Which is the time difference between the validity of the root certificate
@@ -127,6 +142,9 @@ class SelfSignedCertificatesCharm(CharmBase):
         the renewal threshold will be 275 days.
         This is important so the CA does not expire during the issued certificate validity.
         """
+        if not self._config_root_ca_certificate_validity or not self._config_certificate_validity:
+            logger.warning("No root CA certificate validity or certificate validity set")
+            return None
         return self._config_root_ca_certificate_validity - self._config_certificate_validity
 
     def _on_get_issued_certificates(self, event: ActionEvent) -> None:
@@ -167,36 +185,30 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         event.set_results({"result": "New private key and CA certificate generated and stored."})
 
-    @property
-    def _config_certificate_validity(self) -> timedelta:
-        """Returns certificate validity (timedelta)."""
-        return self._int_config_to_timedelta(
-            int(self.model.config.get("certificate-validity")),  # type: ignore[arg-type]
-            self._config_validity_unit,
-        )
+    def _parse_config_time_string(self, time_str: str) -> timedelta:
+        """Parse a given time string.
 
-    def _int_config_to_timedelta(self, value: int, unit: str) -> timedelta:
-        """Convert the config value to a timedelta.
+        It must be a number followed by either an
+        s for seconds, h for hours, d for days or y for years.
 
         Args:
-            value (int): Config value.
-            unit (str): Config unit.
-
+            time_str: the input string. Ex: "15s", "365d", "10w"
+                or "10" and will be converted to days
         Returns:
-            timedelta: Timedelta.
+            timedelta object representing the given string
         """
-        if unit == "weeks":
-            return timedelta(weeks=value)
-        elif unit == "days":
-            return timedelta(days=value)
-        elif unit == "hours":
-            return timedelta(hours=value)
-        elif unit == "minutes":
-            return timedelta(minutes=value)
-        elif unit == "seconds":
+        if time_str.isnumeric():
+            return timedelta(days=int(time_str))
+        value, unit = int(time_str[:-1]), time_str[-1]
+        if unit == "s":
             return timedelta(seconds=value)
-        else:
+        elif unit == "h":
+            return timedelta(hours=value)
+        elif unit == "d":
             return timedelta(days=value)
+        elif unit == "w":
+            return timedelta(weeks=value)
+        raise ValueError(f"unsupported time string format: {time_str}")
 
     @property
     def _config_ca_common_name(self) -> Optional[str]:
@@ -246,8 +258,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         If the secret is already created, we simply update its content, else we create a
         new secret.
         """
-        if not self._config_ca_common_name:
-            raise ValueError("CA common name should not be empty")
+        if (
+            not self._config_ca_common_name
+            or not self._config_root_ca_certificate_validity
+            or not self._config_certificate_validity
+            or not self._ca_certificate_renewal_threshold
+        ):
+            logger.warning("Missing configuration for root CA certificate")
+            return
         private_key = generate_private_key()
         ca_certificate = generate_ca(
             private_key=private_key,
@@ -315,6 +333,14 @@ class SelfSignedCertificatesCharm(CharmBase):
         The validity of the expiring CA can't be shorter than
             the validity of the issued certificates.
         """
+        if (
+            not self._config_ca_common_name
+            or not self._config_root_ca_certificate_validity
+            or not self._config_certificate_validity
+            or not self._ca_certificate_renewal_threshold
+        ):
+            logger.warning("Missing configuration for expiring CA certificate")
+            return
         try:
             current_active_ca_cert_secret = self.model.get_secret(
                 label=CA_CERTIFICATES_SECRET_LABEL
@@ -419,6 +445,14 @@ class SelfSignedCertificatesCharm(CharmBase):
             is_ca (bool): Whether the certificate is a CA
             relation_id (int): Relation id
         """
+        if (
+            not self._config_ca_common_name
+            or not self._config_root_ca_certificate_validity
+            or not self._config_certificate_validity
+            or not self._ca_certificate_renewal_threshold
+        ):
+            logger.warning("Missing configuration for self-signed certificate")
+            return
         ca_certificate_secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         ca_certificate = Certificate.from_string(ca_certificate_secret_content["ca-certificate"])
