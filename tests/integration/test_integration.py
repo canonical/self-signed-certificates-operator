@@ -136,7 +136,7 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     assert application
     await application.set_config(
         {
-            "root-ca-validity": "60s",
+            "root-ca-validity": "90s",
             "certificate-validity": "30s",
         }
     )
@@ -149,16 +149,17 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     action_output = await wait_for_requirer_certificates(
         ops_test=ops_test, ca_common_name=new_common_name
     )
-    old_certificate = action_output.get("ca-certificate", "")
+    old_certificate = action_output.get("certificate", "")
 
     assert old_certificate
 
-    time.sleep(30)
+    # Wait for the certificate to expire
+    time.sleep(35)
 
     action_output = await wait_for_requirer_certificates(
         ops_test=ops_test, ca_common_name=new_common_name
     )
-    new_certificate = action_output.get("ca-certificate", "")
+    new_certificate = action_output.get("certificate", "")
     assert new_certificate
     assert new_certificate != old_certificate
 
