@@ -98,11 +98,11 @@ config:
     root-ca-validity:
       type: int
       default: 365
-      description: RootCA certificate validity (in days), should longer than twice of certificate-validity. Changing this value will trigger generation of a new CA certificate, revoking all previously issued certificates.
+      description: RootCA certificate validity (in days). This value should be longer than twice the certificate-validity. Changing this value will trigger generation of a new CA certificate, revoking all previously issued certificates.
     certificate-validity:
       type: int
       default: 90
-      description: Certificate validity (in days) must be shorter than half the root-ca-validity. Changing this value will trigger generation of a new CA certificate, revoking all previously issued certificates.
+      description: Certificate validity (in days). This value must be shorter than half the root-ca-validity. Changing this value will trigger generation of a new CA certificate, revoking all previously issued certificates.
     validity-unit:
       type: string
       default: days
