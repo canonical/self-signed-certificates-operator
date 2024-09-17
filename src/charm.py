@@ -298,8 +298,9 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _renew_root_certificate(self):
         """Generate a new active root CA certificate.
 
-        If there is an active CA certificate that is about to expire, generate a new one.
-        If there is no active CA certificate, generate a new one.
+        If there is a CA certificate that is about to expire,
+        move it to the expiring-ca-certificate secret.
+        Generate a new active CA certificate
         """
         if not self.unit.is_leader():
             return
