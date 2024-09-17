@@ -125,7 +125,7 @@ config:
         For example, "15s" for 15 seconds, "10w" for 10 weeks. 
         If no units are given, the unit will be assumed as days.
         Defaults to 365 days.
-        This value should be longer than twice the certificate-validity.
+        This value should be equal to or longer than twice the certificate-validity.
         Changing this value will trigger generation of a new CA certificate,
         revoking all previously issued certificates.
     certificate-validity:
@@ -137,7 +137,7 @@ config:
         For example, "15s" for 15 seconds, "10w" for 10 weeks. 
         If no units are given, the unit will be assumed as days.
         Defaults to 90 days.
-        This value should be longer than twice the certificate-validity.
+        This value should be equal to or shorter than half the root-ca-validity.
         Changing this value will trigger generation of a new CA certificate,
         revoking all previously issued certificates.
 
