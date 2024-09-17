@@ -165,26 +165,6 @@ class SelfSignedCertificatesCharm(CharmBase):
         results = {"certificates": [certificate.to_json() for certificate in certificates]}
         event.set_results(results)
 
-    def _on_rotate_private_key(self, event: ActionEvent):
-        """Handle the rotate-private-key action.
-
-        Args:
-            event (ActionEvent): Juju event
-        """
-        if not self.unit.is_leader():
-            event.fail("This action can only be run on the leader unit.")
-            return
-        self.tls_certificates.revoke_all_certificates()
-        self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
-        logger.info("Revoked all previously issued certificates.")
-        try:
-            self._generate_root_certificate()
-        except ValueError as e:
-            logger.error("Failed to rotate private key: %s", e)
-            event.fail(f"Failed to rotate private key, please try again: {e}")
-            return
-        event.set_results({"result": "New private key and CA certificate generated and stored."})
-
     def _parse_config_time_string(self, time_str: str) -> timedelta:
         """Parse a given time string.
 
