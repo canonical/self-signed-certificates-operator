@@ -24,7 +24,8 @@ TLS_REQUIRER_CHARM_NAME = "tls-certificates-requirer"
 CA_COMMON_NAME = "example.com"
 
 ARCH = "arm64" if platform.machine() == "aarch64" else "amd64"
-
+REQUIRER_CHARM_REVISION_ARM = 103
+REQUIRER_CHARM_REVISION_AMD = 104
 
 async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str) -> Dict[str, str]:
     """Wait for the certificate to be provided to the `tls-requirer-requirer/0` unit.
@@ -82,10 +83,17 @@ async def deploy(ops_test: OpsTest, request):
         },
         constraints={"arch": ARCH},
     )
+    if ARCH == "arm64":
+         await ops_test.model.deploy(
+        TLS_REQUIRER_CHARM_NAME,
+        application_name=TLS_REQUIRER_CHARM_NAME,
+        revision=REQUIRER_CHARM_REVISION_ARM,
+        constraints={"arch": ARCH},
+    )
     await ops_test.model.deploy(
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
-        channel="latest/edge",
+        revision=REQUIRER_CHARM_REVISION_AMD,
         constraints={"arch": ARCH},
     )
 
