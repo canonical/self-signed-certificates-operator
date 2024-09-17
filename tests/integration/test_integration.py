@@ -88,6 +88,7 @@ async def deploy(ops_test: OpsTest, request):
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
         revision=REQUIRER_CHARM_REVISION_ARM if ARCH == "arm64" else REQUIRER_CHARM_REVISION_AMD,
+        channel="stable",
         constraints={"arch": ARCH},
     )
 
