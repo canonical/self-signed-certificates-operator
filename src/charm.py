@@ -101,11 +101,7 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     @property
     def _config_root_ca_certificate_validity(self) -> timedelta | None:
-        """Return Root CA certificate validity.
-
-        Returns:
-            int: Certificate validity
-        """
+        """Return Root CA certificate validity from the charm config as a timedelta object."""
         try:
             validity = self._parse_config_time_string(
                 str(self.model.config.get("root-ca-validity", ""))
@@ -117,11 +113,7 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     @property
     def _config_certificate_validity(self) -> timedelta | None:
-        """Returns certificate validity (in seconds).
-
-        Returns:
-            int: Certificate validity (in seconds)
-        """
+        """Returns certificate validity from the charm config as a timedelta object."""
         try:
             validity = self._parse_config_time_string(
                 str(self.model.config.get("certificate-validity", ""))
