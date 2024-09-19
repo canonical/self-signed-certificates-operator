@@ -193,12 +193,12 @@ class TestCharmConfigure:
         initial_ca_certificate = generate_ca(
             private_key=initial_ca_private_key,
             common_name="example.com",
-            validity=timedelta(seconds=60),
+            validity=timedelta(minutes=2),
         )
         new_ca_certificate = generate_ca(
             private_key=new_ca_private_key,
             common_name="example.com",
-            validity=timedelta(seconds=60),
+            validity=timedelta(minutes=2),
         )
         patch_generate_ca.return_value = new_ca_certificate
         patch_generate_private_key.return_value = new_ca_private_key
@@ -214,8 +214,8 @@ class TestCharmConfigure:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "root-ca-validity": "60s",
-                "certificate-validity": "30s",
+                "root-ca-validity": "2m",
+                "certificate-validity": "1m",
             },
             leader=True,
             secrets={ca_certificate_secret},
@@ -239,7 +239,7 @@ class TestCharmConfigure:
         assert expiring_ca_certificates_secret.expire
         tolerance = timedelta(seconds=1)
         assert (
-            abs(expiring_ca_certificates_secret.expire - (datetime.now() + timedelta(seconds=30)))
+            abs(expiring_ca_certificates_secret.expire - (datetime.now() + timedelta(minutes=1)))
             <= tolerance
         )
 

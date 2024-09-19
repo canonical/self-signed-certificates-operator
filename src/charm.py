@@ -161,10 +161,10 @@ class SelfSignedCertificatesCharm(CharmBase):
         """Parse a given time string.
 
         It must be a number followed by either an
-        s for seconds, h for hours, d for days or y for years.
+        m for minutes, h for hours, d for days or y for years.
 
         Args:
-            time_str: the input string. Ex: "15s", "365d", "10w"
+            time_str: the input string. Ex: "15m", "365d", "10w"
                 or "10" and will be converted to days
         Returns:
             timedelta object representing the given string
@@ -172,8 +172,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         if time_str.isnumeric():
             return timedelta(days=int(time_str))
         value, unit = int(time_str[:-1]), time_str[-1]
-        if unit == "s":
-            return timedelta(seconds=value)
+        if unit == "m":
+            return timedelta(minutes=value)
         elif unit == "h":
             return timedelta(hours=value)
         elif unit == "d":
