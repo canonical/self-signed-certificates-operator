@@ -140,7 +140,7 @@ async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_chang
     await wait_for_requirer_certificates(ops_test=ops_test, ca_common_name=new_common_name)
 
 
-async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_new_certificate_is_provided(  # noqa: E501
+async def test_given_tls_requirer_is_integrated_when_certificates_expires_then_new_certificate_is_provided(  # noqa: E501
     ops_test: OpsTest,
     deploy,
 ):
@@ -150,8 +150,8 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     assert application
     await application.set_config(
         {
-            "root-ca-validity": "180s",
-            "certificate-validity": "60s",
+            "root-ca-validity": "3m",
+            "certificate-validity": "1m",
         }
     )
     await ops_test.model.wait_for_idle(
@@ -163,9 +163,10 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     action_output = await wait_for_requirer_certificates(
         ops_test=ops_test, ca_common_name=new_common_name
     )
-    old_certificate = action_output.get("certificate", "")
+    new_common_name_certificate = action_output.get("certificate", "")
+    new_common_name_ca = action_output.get("ca-certificate", "")
 
-    assert old_certificate
+    assert new_common_name_certificate
 
     # Wait for the certificate to expire
     time.sleep(60)
@@ -173,9 +174,21 @@ async def test_given_tls_requirer_is_integrated_when_certificate_expires_then_ne
     action_output = await wait_for_requirer_certificates(
         ops_test=ops_test, ca_common_name=new_common_name
     )
-    new_certificate = action_output.get("certificate", "")
-    assert new_certificate
-    assert new_certificate != old_certificate
+    renewed_certificate = action_output.get("certificate", "")
+    assert renewed_certificate
+    assert renewed_certificate != new_common_name_certificate
+    assert action_output.get("ca-certificate", "") == new_common_name_ca
+
+    # Wait for the CA certificate to expire
+    time.sleep(120)
+    action_output = await wait_for_requirer_certificates(
+        ops_test=ops_test, ca_common_name=new_common_name
+    )
+    new_certificate_with_new_ca = action_output.get("certificate", "")
+    new_ca = action_output.get("ca-certificate", "")
+    assert new_certificate_with_new_ca
+    assert new_certificate_with_new_ca != renewed_certificate
+    assert new_ca != new_common_name_ca
 
 
 async def test_given_charm_scaled_then_charm_does_not_crash(
