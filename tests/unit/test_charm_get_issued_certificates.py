@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import json
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
@@ -45,7 +46,7 @@ class TestCharmGetIssuedCertificates:
         ca_certificate = generate_ca(
             private_key=ca_private_key,
             common_name="example.com",
-            validity=100,
+            validity=timedelta(days=100),
         )
         requirer_private_key = generate_private_key()
         csr = generate_csr(private_key=requirer_private_key, common_name="example.com")
@@ -53,7 +54,7 @@ class TestCharmGetIssuedCertificates:
             csr=csr,
             ca=ca_certificate,
             ca_private_key=ca_private_key,
-            validity=100,
+            validity=timedelta(days=100),
         )
         chain = [ca_certificate, certificate]
         revoked = False
@@ -70,7 +71,7 @@ class TestCharmGetIssuedCertificates:
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
         )
