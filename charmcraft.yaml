@@ -76,33 +76,70 @@ config:
     ca-common-name:
       type: string
       default: self-signed-certificates-operator
-      description: Common name to be used by the Certificate Authority.
+      description: >
+        Common name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-organization:
       type: string
-      description: Organization name to be used by the Certificate Authority.
+      description: >
+        Organization name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-organizational-unit:
       type: string
-      description: Organizational unit to be used by the Certificate Authority.
+      description: >
+        Organizational unit to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-email-address:
       type: string
-      description: Email address to be used by the Certificate Authority.
+      description: >
+        Email address to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-country-name:
       type: string
-      description: Country name to be used by the Certificate Authority.
+      description: >
+        Country name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-state-or-province-name:
       type: string
-      description: State or province name to be used by the Certificate Authority.
+      description: >
+        State or province name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     ca-locality-name:
       type: string
-      description: Locality name to be used by the Certificate Authority.
+      description: >
+        Locality name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     root-ca-validity:
-      type: int
-      default: 365
-      description: RootCA certificate validity (in days).
+      type: string
+      default: 365d
+      description: >
+        RootCA certificate validity. 
+        The given value must be followed by one of: "m" for minutes, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "1m" for 1 minute, "10w" for 10 weeks.
+        If no units are given, the unit will be assumed as days.
+        Defaults to 365 days.
+        This value should be equal to or longer than twice the certificate-validity.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
     certificate-validity:
-      type: int
-      default: 365
-      description: Certificate validity (in days).
+      type: string
+      default: 90d
+      description: > 
+        Signed certificate validity.
+        The given value must be followed by one of: "m" for minutes, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "1m" for 1 minute, "10w" for 10 weeks.
+        If no units are given, the unit will be assumed as days.
+        Defaults to 90 days.
+        This value should be equal to or shorter than half the root-ca-validity.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
 
 actions:
   get-ca-certificate:

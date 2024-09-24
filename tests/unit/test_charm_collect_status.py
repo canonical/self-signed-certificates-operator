@@ -21,7 +21,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
         )
@@ -36,7 +36,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 0,
+                "certificate-validity": "0",
             },
             leader=True,
         )
@@ -44,7 +44,25 @@ class TestCharmCollectStatus:
         state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
 
         assert state_out.unit_status == BlockedStatus(
-            "The following configuration values are not valid: ['certificate-validity']"
+            "The following configuration values are not valid: ['certificate-validity', 'root-ca-validity']"  # noqa: E501
+        )
+
+    def test_given_root_ca_validity_config_not_twice_the_certificate_validity_when_collect_unit_status_then_status_is_blocked(  # noqa: E501
+        self,
+    ):
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "pizza.example.com",
+                "certificate-validity": "100",
+                "root-ca-validity": "0",
+            },
+            leader=True,
+        )
+
+        state_out = self.ctx.run(self.ctx.on.collect_unit_status(), state=state_in)
+
+        assert state_out.unit_status == BlockedStatus(
+            "The following configuration values are not valid: ['certificate-validity', 'root-ca-validity']"  # noqa: E501
         )
 
     @patch("charm.generate_private_key")
@@ -59,7 +77,7 @@ class TestCharmCollectStatus:
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
-                "certificate-validity": 100,
+                "certificate-validity": "100",
             },
             leader=True,
         )
