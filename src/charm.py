@@ -161,6 +161,8 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _on_rotate_private_key(self, event: ActionEvent):
         """Handle the rotate-private-key action.
 
+        Creates a new private key and a new CA certificate and revokes all issued certificates.
+
         Args:
             event (ActionEvent): Juju event
         """
@@ -168,9 +170,15 @@ class SelfSignedCertificatesCharm(CharmBase):
             event.fail("This action can only be run on the leader unit.")
             return
         self.tls_certificates.revoke_all_certificates()
-        self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
         logger.info("Revoked all previously issued certificates.")
-        self._generate_root_certificate()
+        self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+        if not self._generate_root_certificate():
+            event.fail(
+                "Private key rotation failed due to missing configuration.\
+                Please check your configuration and try again.\
+                Certificates have been revoked."
+            )
+            return
         event.set_results({"result": "New private key and CA certificate generated and stored."})
 
     def _parse_config_time_string(self, time_str: str) -> timedelta:
@@ -239,7 +247,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         except SecretNotFoundError:
             return False
 
-    def _generate_root_certificate(self) -> None:
+    def _generate_root_certificate(self) -> bool:
         """Generate root certificate to be used to sign certificates.
 
         Stores the root certificate in a juju secret.
@@ -253,7 +261,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             or not self._ca_certificate_renewal_threshold
         ):
             logger.warning("Missing configuration for root CA certificate")
-            return
+            return False
         private_key = generate_private_key()
         ca_certificate = generate_ca(
             private_key=private_key,
@@ -277,6 +285,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             expire=self._ca_certificate_renewal_threshold,
         )
         logger.info("Root certificates generated and stored.")
+        return True
 
     def _configure(self, _: EventBase) -> None:
         """Validate configuration and generates root certificate.
@@ -392,6 +401,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             expiring_ca_secret = self.model.get_secret(label=label)
             expiring_ca_secret.remove_all_revisions()
         except SecretNotFoundError:
+            logger.info("Secret %s not found, skipping clean up", label)
             return
         return
 
