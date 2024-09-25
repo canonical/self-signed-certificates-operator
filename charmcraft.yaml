@@ -147,3 +147,6 @@ actions:
 
   get-issued-certificates:
     description: Outputs the certificates issued by the charm.
+
+  rotate-private-key:
+    description: Creates a new private key and a new CA certificate and revokes all issued certificates.

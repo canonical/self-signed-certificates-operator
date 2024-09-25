@@ -74,6 +74,7 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._configure,
         )
+        self.framework.observe(self.on.rotate_private_key_action, self._on_rotate_private_key)
 
     def _on_collect_unit_status(self, event: CollectStatusEvent):
         """Centralized status management for the charm."""
@@ -156,6 +157,21 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         results = {"certificates": [certificate.to_json() for certificate in certificates]}
         event.set_results(results)
+
+    def _on_rotate_private_key(self, event: ActionEvent):
+        """Handle the rotate-private-key action.
+
+        Args:
+            event (ActionEvent): Juju event
+        """
+        if not self.unit.is_leader():
+            event.fail("This action can only be run on the leader unit.")
+            return
+        self.tls_certificates.revoke_all_certificates()
+        self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
+        logger.info("Revoked all previously issued certificates.")
+        self._generate_root_certificate()
+        event.set_results({"result": "New private key and CA certificate generated and stored."})
 
     def _parse_config_time_string(self, time_str: str) -> timedelta:
         """Parse a given time string.
@@ -276,9 +292,9 @@ class SelfSignedCertificatesCharm(CharmBase):
             return
         if not self._root_certificate_is_stored or not self._root_certificate_matches_config():
             self.tls_certificates.revoke_all_certificates()
+            logger.info("Revoked all previously issued certificates.")
             self._clean_up_juju_secret(EXPIRING_CA_CERTIFICATES_SECRET_LABEL)
             self._generate_root_certificate()
-            logger.info("Revoked all previously issued certificates.")
             return
         if not self._is_ca_cert_active():
             logger.info("Renewing CA certificate")
