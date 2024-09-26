@@ -253,6 +253,9 @@ class SelfSignedCertificatesCharm(CharmBase):
         Stores the root certificate in a juju secret.
         If the secret is already created, we simply update its content, else we create a
         new secret.
+
+        Returns:
+            bool: Whether the root certificate was generated and stored successfully.
         """
         if (
             not self._config_ca_common_name
