@@ -8,7 +8,7 @@ import pytest
 import scenario
 from charms.tls_certificates_interface.v4.tls_certificates import (
     ProviderCertificate,
-    RequirerCSR,
+    RequirerCertificateRequest,
     generate_ca,
     generate_certificate,
     generate_csr,
@@ -280,7 +280,7 @@ class TestCharmConfigure:
             expire=datetime.now() + timedelta(days=100),
         )
         patch_get_outstanding_certificate_requests.return_value = [
-            RequirerCSR(
+            RequirerCertificateRequest(
                 relation_id=tls_relation.id,
                 certificate_signing_request=requirer_csr,
                 is_ca=False,
