@@ -12,8 +12,8 @@ from typing import Optional, cast
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
 )
-from charms.tempo_k8s.v1.charm_tracing import trace_charm
-from charms.tempo_k8s.v2.tracing import TracingEndpointRequirer, charm_tracing_config
+from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
+from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
 from charms.tls_certificates_interface.v4.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
