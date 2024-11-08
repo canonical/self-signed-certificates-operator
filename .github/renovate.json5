@@ -1,0 +1,29 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableRateLimiting",
+    ":noUnscheduledUpdates",
+    // Avoid conflicts with custom `commitMessagePrefix`
+    ":semanticCommitsDisabled"
+  ],
+  "schedule": ["after 1am and before 3am every monday"],
+  "timezone": "Etc/UTC",
+  "enabledManagers": ["pep621", "github-actions", "terraform"],
+  "packageRules": [
+    // Later rules override earlier rules
+    {
+      "matchManagers": ["pep621"],
+      "rangeStrategy": "bump",
+      "groupName": "Python dependencies"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub actions"
+    },
+    {
+      "matchManagers": ["terraform"],
+      "groupName": "Terraform"
+    },
+  ],
+}
