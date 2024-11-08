@@ -5,7 +5,7 @@ To make contributions to this charm, you'll need a working [development setup](h
 This project uses `uv`. You can install it on Ubuntu with:
 
 ```shell
-sudo snap install --classic astral-uv --channel latest/edge
+sudo snap install --classic astral-uv
 ```
 
 You can create an environment for development with `uv`:
