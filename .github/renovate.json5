@@ -7,6 +7,10 @@
     // Avoid conflicts with custom `commitMessagePrefix`
     ":semanticCommitsDisabled"
   ],
+  "automerge": true,
+  "automergeStrategy": "squash",
+  "automergeType": "pr",
+  "platformAutomerge": true,
   "schedule": ["after 1am and before 3am every monday"],
   "lockFileMaintenance": {
     "enabled": true,
