@@ -384,7 +384,7 @@ class TestCharmConfigure:
                 "ca-common-name": "example.com",
                 "certificate-validity": "100",
                 "root-ca-validity": "200",
-                "certificate-number-limit": 2,
+                "certificate-limit": 2,
             },
             leader=True,
             relations={tls_relation},

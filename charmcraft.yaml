@@ -140,7 +140,7 @@ config:
         This value should be equal to or shorter than half the root-ca-validity.
         Changing this value will trigger generation of a new CA certificate,
         revoking all previously issued certificates.
-    certificate-number-limit:
+    certificate-limit:
       type: int
       description: >
         Maximum number of certificates that can be issued to a single requirer.

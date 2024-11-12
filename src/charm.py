@@ -128,7 +128,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     @property
     def _config_certificate_number_limit(self) -> int | None:
         """Return certificate number limit from the charm config."""
-        value = self.model.config.get("certificate-number-limit")
+        value = self.model.config.get("certificate-limit")
         if not value or not isinstance(value, int):
             return None
         return value
