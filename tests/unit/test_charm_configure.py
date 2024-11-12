@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 from datetime import datetime, timedelta
-from unittest.mock import mock_open, patch
+from unittest.mock import call, mock_open, patch
 
 import pytest
 import scenario
@@ -310,6 +310,110 @@ class TestCharmConfigure:
         patch_set_relation_certificate.assert_called_with(
             provider_certificate=expected_provider_certificate,
         )
+
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
+    @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
+    @patch("charm.generate_certificate")
+    def test_given_outstanding_certificate_requests_and_limit_reached_when_config_changed_then_certificate_number_is_limited(  # noqa: E501
+        self,
+        patch_generate_certificate,
+        patch_get_outstanding_certificate_requests,
+        patch_set_relation_certificate,
+    ):
+        requirer_private_key = generate_private_key()
+        provider_private_key = generate_private_key()
+        provider_ca = generate_ca(
+            private_key=provider_private_key,
+            common_name="example.com",
+            validity=timedelta(days=200),
+        )
+        requirer_csr_1 = generate_csr(private_key=requirer_private_key, common_name="example.com")
+        requirer_csr_2 = generate_csr(private_key=requirer_private_key, common_name="example.com")
+        certificate_1 = generate_certificate(
+            csr=requirer_csr_1,
+            ca=provider_ca,
+            ca_private_key=provider_private_key,
+            validity=timedelta(days=100),
+        )
+        certificate_2 = generate_certificate(
+            csr=requirer_csr_2,
+            ca=provider_ca,
+            ca_private_key=provider_private_key,
+            validity=timedelta(days=100),
+        )
+        requirer_csr_3 = generate_csr(private_key=requirer_private_key, common_name="example.com")
+        certificate_3 = generate_certificate(
+            csr=requirer_csr_3,
+            ca=provider_ca,
+            ca_private_key=provider_private_key,
+            validity=timedelta(days=100),
+        )
+        tls_relation = scenario.Relation(
+            endpoint="certificates",
+            interface="tls-certificates",
+        )
+        ca_certificate_secret = scenario.Secret(
+            {
+                "ca-certificate": str(provider_ca),
+                "private-key": str(provider_private_key),
+            },
+            label=CA_CERTIFICATES_SECRET_LABEL,
+            owner="app",
+            expire=datetime.now() + timedelta(days=100),
+        )
+        patch_get_outstanding_certificate_requests.return_value = [
+            RequirerCertificateRequest(
+                relation_id=tls_relation.id,
+                certificate_signing_request=requirer_csr_1,
+                is_ca=False,
+            ),
+            RequirerCertificateRequest(
+                relation_id=tls_relation.id,
+                certificate_signing_request=requirer_csr_2,
+                is_ca=False,
+            ),
+            RequirerCertificateRequest(
+                relation_id=tls_relation.id,
+                certificate_signing_request=requirer_csr_3,
+                is_ca=False,
+            ),
+        ]
+        patch_generate_certificate.side_effect = [certificate_1, certificate_2, certificate_3]
+        state_in = scenario.State(
+            config={
+                "ca-common-name": "example.com",
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
+                "certificate-number-limit": 2,
+            },
+            leader=True,
+            relations={tls_relation},
+            secrets={ca_certificate_secret},
+        )
+
+        self.ctx.run(self.ctx.on.config_changed(), state=state_in)
+
+        expected_provider_certificate_1 = ProviderCertificate(
+            relation_id=tls_relation.id,
+            certificate=certificate_1,
+            certificate_signing_request=requirer_csr_1,
+            ca=provider_ca,
+            chain=[provider_ca, certificate_1],
+        )
+        expected_provider_certificate_2 = ProviderCertificate(
+            relation_id=tls_relation.id,
+            certificate=certificate_2,
+            certificate_signing_request=requirer_csr_2,
+            ca=provider_ca,
+            chain=[provider_ca, certificate_2],
+        )
+        patch_set_relation_certificate.assert_has_calls(
+            [
+                call(provider_certificate=expected_provider_certificate_1),
+                call(provider_certificate=expected_provider_certificate_2),
+            ]
+        )
+        assert patch_generate_certificate.call_count == 2
 
     @pytest.mark.skip(reason="https://github.com/canonical/operator/issues/1316")
     @patch("charm.generate_private_key")

@@ -7,7 +7,7 @@
 import logging
 import typing
 from datetime import datetime, timedelta
-from typing import Optional, cast
+from typing import Iterator, Optional, cast
 
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
@@ -19,6 +19,7 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
     CertificateSigningRequest,
     PrivateKey,
     ProviderCertificate,
+    RequirerCertificateRequest,
     TLSCertificatesProvidesV4,
     generate_ca,
     generate_certificate,
@@ -123,6 +124,14 @@ class SelfSignedCertificatesCharm(CharmBase):
             logger.warning('config option "certificate-validity" is invalid.', exc_info=True)
             return None
         return validity
+
+    @property
+    def _config_certificate_number_limit(self) -> int | None:
+        """Return certificate number limit from the charm config."""
+        value = self.model.config.get("certificate-number-limit")
+        if not value or not isinstance(value, int):
+            return None
+        return value
 
     @property
     def _ca_certificate_renewal_threshold(self) -> timedelta | None:
@@ -410,12 +419,25 @@ class SelfSignedCertificatesCharm(CharmBase):
 
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""
-        for request in self.tls_certificates.get_outstanding_certificate_requests():
+        requests = self.tls_certificates.get_outstanding_certificate_requests()
+        if self._config_certificate_number_limit:
+            requests = self._limit_requests(requests)
+        for request in requests:
             self._generate_self_signed_certificate(
                 csr=request.certificate_signing_request,
                 is_ca=request.is_ca,
                 relation_id=request.relation_id,
             )
+
+    def _limit_requests(
+        self, requests: list[RequirerCertificateRequest]
+    ) -> Iterator[RequirerCertificateRequest]:
+        """Limit the number of requests to the configured limit."""
+        counts = {}
+        for request in requests:
+            counts[request.relation_id] = counts.get(request.relation_id, 0) + 1
+            if counts[request.relation_id] <= self._config_certificate_number_limit:
+                yield request
 
     def _invalid_configs(self) -> list[str]:
         """Return list of invalid configurations.
