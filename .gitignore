@@ -1,3 +1,6 @@
+.charm_tracing_buffer.raw
+build/
+*.egg-info
 *.idea
 .vscode/
 .coverage

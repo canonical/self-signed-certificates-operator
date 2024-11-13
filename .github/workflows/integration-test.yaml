@@ -28,13 +28,11 @@ jobs:
         run: echo "charm_path=$(find built/ -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
       
       - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.29-strict/stable
-          juju-channel: 3.4/stable
-          lxd-channel: 5.20/stable
-  
+        run: |
+          sudo snap install concierge --classic
+          sudo concierge prepare -p microk8s --microk8s-channel "1.29-strict/stable" --juju-channel "3.4/stable" --lxd-channel "5.20/stable" --extra-snaps astral-uv/latest/stable
+          uv tool install tox --with tox-uv
+
       - name: Run integration tests
         run: |
           tox -e integration -- \
