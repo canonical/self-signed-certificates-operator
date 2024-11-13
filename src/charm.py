@@ -126,7 +126,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         return validity
 
     @property
-    def _config_certificate_number_limit(self) -> int | None:
+    def _config_certificate_limit(self) -> int | None:
         """Return certificate number limit from the charm config."""
         value = self.model.config.get("certificate-limit")
         if not value or not isinstance(value, int):
@@ -420,7 +420,7 @@ class SelfSignedCertificatesCharm(CharmBase):
     def _process_outstanding_certificate_requests(self) -> None:
         """Process outstanding certificate requests."""
         requests = self.tls_certificates.get_outstanding_certificate_requests()
-        if self._config_certificate_number_limit:
+        if self._config_certificate_limit and self._config_certificate_limit > -1:
             requests = self._limit_requests(requests)
         for request in requests:
             self._generate_self_signed_certificate(
@@ -436,7 +436,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         counts = {}
         for request in requests:
             counts[request.relation_id] = counts.get(request.relation_id, 0) + 1
-            if counts[request.relation_id] <= self._config_certificate_number_limit:
+            if counts[request.relation_id] <= self._config_certificate_limit:
                 yield request
 
     def _invalid_configs(self) -> list[str]:

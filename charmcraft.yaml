@@ -142,8 +142,10 @@ config:
         revoking all previously issued certificates.
     certificate-limit:
       type: int
+      default: 99
       description: >
         Maximum number of certificates that can be issued to a single requirer.
+        Use -1 for allowing an unlimited number of certificates.
 
 actions:
   get-ca-certificate:
