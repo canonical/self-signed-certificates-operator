@@ -7,7 +7,7 @@ jobs:
   build-charm-under-test:
     strategy:
       matrix:
-        arch:
+        version:
           - arch: amd64
             base: ubuntu-22.04
             runner: ubuntu-22.04
@@ -20,7 +20,7 @@ jobs:
           - arch: arm64
             base: ubuntu-24.04
             runner: [self-hosted, linux, ARM64, medium, noble]
-    runs-on: ${{ matrix.arch.runner }}
+    runs-on: ${{ matrix.version.runner }}
     steps:
       - uses: actions/checkout@v4
     
@@ -36,8 +36,8 @@ jobs:
         run: |
           # Only copy the base specific charmcraft_<base>.yaml if it is not the
           # latest LTS (24.04). The latest LTS is used in the bare charmcraft.yaml
-          if [ "${{ matrix.arch.base }}" != "ubuntu-24.04" ]; then
-              cp charmcraft_${{ matrix.arch.base }}.yaml charmcraft.yaml
+          if [ "${{ matrix.version.base }}" != "ubuntu-24.04" ]; then
+              cp charmcraft_${{ matrix.version.base }}.yaml charmcraft.yaml
           fi
 
       - name: Build charm under test
@@ -46,6 +46,6 @@ jobs:
       - name: Archive Charm Under Test
         uses: actions/upload-artifact@v4
         with:
-          name: built-charm-${{ matrix.arch.arch }}
+          name: built-charm-${{ matrix.version.arch }}-${{ matrix.version.base }}
           path: "*.charm"
           retention-days: 5
