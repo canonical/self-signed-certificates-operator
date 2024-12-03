@@ -17,9 +17,6 @@ jobs:
           - arch: arm64
             base: ubuntu-22.04
             runner: [self-hosted, linux, ARM64, medium, jammy]
-          - arch: arm64
-            base: ubuntu-24.04
-            runner: [self-hosted, linux, ARM64, medium, noble]
     runs-on: ${{ matrix.version.runner }}
     steps:
       - uses: actions/checkout@v4
