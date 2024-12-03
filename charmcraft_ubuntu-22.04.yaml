@@ -1,0 +1,151 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: self-signed-certificates
+
+summary: An operator to provide self-signed X.509 certificates to your charms.
+
+description: |
+  An operator to provide self-signed X.509 certificates to your charms.
+
+  This charm relies on the `tls-certificates` charm relation interface. When a requirer charm
+  inserts a Certificate Signing Request in its unit databag, the
+  `self-signed-certificates-operator` will read it, generate a self-signed X.509 certificates and
+  inserts this certificate back into the relation data.
+
+  This charm is useful when developing charms or when deploying charms in non-production environment.
+links:
+  documentation: https://discourse.charmhub.io/t/self-signed-x-509-certificates-documentation/11591
+  website:
+    - https://charmhub.io/self-signed-certificates
+  source:
+    - https://github.com/canonical/self-signed-certificates-operator
+  issues:
+    - https://github.com/canonical/self-signed-certificates-operator/issues
+
+assumes:
+  - juju >= 3.1
+
+type: charm
+base: ubuntu@22.04
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+  arm64:
+
+parts:
+  charm:
+    source: .
+    plugin: charm
+    charm-requirements:
+      - requirements.txt
+    build-packages:
+      - libffi-dev
+      - libssl-dev
+      - pkg-config
+    build-snaps:
+      - astral-uv
+      - rustup
+    override-build: |
+      rustup default stable
+      uv export --frozen --no-dev -o requirements.txt
+      craftctl default
+
+provides:
+  certificates:
+    interface: tls-certificates
+  send-ca-cert:
+    interface: certificate_transfer
+    description: |
+      Send our CA certificate so clients can trust the CA by means of forming a relation.
+
+requires:
+  tracing:
+    interface: tracing
+    limit: 1
+
+config:
+  options:
+    ca-common-name:
+      type: string
+      default: self-signed-certificates-operator
+      description: >
+        Common name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-organization:
+      type: string
+      description: >
+        Organization name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-organizational-unit:
+      type: string
+      description: >
+        Organizational unit to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-email-address:
+      type: string
+      description: >
+        Email address to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-country-name:
+      type: string
+      description: >
+        Country name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-state-or-province-name:
+      type: string
+      description: >
+        State or province name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    ca-locality-name:
+      type: string
+      description: >
+        Locality name to be used by the Certificate Authority.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    root-ca-validity:
+      type: string
+      default: 365d
+      description: >
+        RootCA certificate validity. 
+        The given value must be followed by one of: "m" for minutes, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "1m" for 1 minute, "10w" for 10 weeks.
+        If no units are given, the unit will be assumed as days.
+        Defaults to 365 days.
+        This value should be equal to or longer than twice the certificate-validity.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    certificate-validity:
+      type: string
+      default: 90d
+      description: > 
+        Signed certificate validity.
+        The given value must be followed by one of: "m" for minutes, "h" for hours, "d" for days and "w" for weeks. 
+        For example, "1m" for 1 minute, "10w" for 10 weeks.
+        If no units are given, the unit will be assumed as days.
+        Defaults to 90 days.
+        This value should be equal to or shorter than half the root-ca-validity.
+        Changing this value will trigger generation of a new CA certificate,
+        revoking all previously issued certificates.
+    certificate-limit:
+      type: int
+      default: 99
+      description: >
+        Maximum number of certificates that can be issued to a single requirer.
+        Use -1 for allowing an unlimited number of certificates.
+
+actions:
+  get-ca-certificate:
+    description: Outputs the CA cert.
+
+  get-issued-certificates:
+    description: Outputs the certificates issued by the charm.
+
+  rotate-private-key:
+    description: Creates a new private key and a new CA certificate and revokes all issued certificates.
