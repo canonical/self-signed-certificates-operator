@@ -22,9 +22,9 @@ from charms.tls_certificates_interface.v3.tls_certificates import (
     generate_private_key,
 )
 from cryptography import x509
+from ops import main
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent, RelationJoinedEvent
 from ops.framework import EventBase
-from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 
 logger = logging.getLogger(__name__)
