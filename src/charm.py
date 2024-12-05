@@ -25,9 +25,9 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
     generate_certificate,
     generate_private_key,
 )
+from ops import main
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent
 from ops.framework import EventBase
-from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 
 from constants import (
