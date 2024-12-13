@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 
 from datetime import datetime, timedelta
-from unittest.mock import call, mock_open, patch
+from unittest.mock import MagicMock, call, mock_open, patch
 
 import pytest
 import scenario
@@ -40,13 +40,13 @@ class TestCharmConfigure:
     @patch("charm.generate_ca")
     def test_given_valid_config_when_config_changed_then_ca_certificate_is_pushed_to_charm_container(  # noqa: E501
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
-        patch_generate_ca.return_value = ca_certificate_string
-        patch_generate_private_key.return_value = private_key_string
+        mock_generate_ca.return_value = ca_certificate_string
+        mock_generate_private_key.return_value = private_key_string
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
@@ -64,13 +64,13 @@ class TestCharmConfigure:
     @patch("charm.generate_ca")
     def test_given_valid_config_when_config_changed_then_ca_certificate_is_stored_in_juju_secret(
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
-        patch_generate_ca.return_value = ca_certificate_string
-        patch_generate_private_key.return_value = private_key_string
+        mock_generate_ca.return_value = ca_certificate_string
+        mock_generate_private_key.return_value = private_key_string
 
         certificate_validity = 100
         root_ca_validity = 200
@@ -102,12 +102,12 @@ class TestCharmConfigure:
     @patch("charm.generate_ca")
     def test_given_root_certificate_not_stored_when_config_changed_then_existing_certificates_are_revoked(  # noqa: E501
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
-        patch_revoke_all_certificates,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
+        mock_revoke_all_certificates: MagicMock,
     ):
-        patch_generate_ca.return_value = "whatever CA certificate"
-        patch_generate_private_key.return_value = "whatever private key"
+        mock_generate_ca.return_value = "whatever CA certificate"
+        mock_generate_private_key.return_value = "whatever private key"
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",
@@ -119,14 +119,14 @@ class TestCharmConfigure:
 
         self.ctx.run(self.ctx.on.config_changed(), state=state_in)
 
-        assert patch_revoke_all_certificates.called
+        assert mock_revoke_all_certificates.called
 
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_new_root_ca_config_when_config_changed_then_new_root_ca_is_replaced(
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
         ca_private_key = generate_private_key()
         initial_ca_certificate = generate_ca(
@@ -139,8 +139,8 @@ class TestCharmConfigure:
             common_name="new.example.com",
             validity=timedelta(days=100),
         )
-        patch_generate_ca.return_value = new_ca
-        patch_generate_private_key.return_value = ca_private_key
+        mock_generate_ca.return_value = new_ca
+        mock_generate_private_key.return_value = ca_private_key
         ca_certificate_secret = scenario.Secret(
             {
                 "ca-certificate": str(initial_ca_certificate),
@@ -169,7 +169,7 @@ class TestCharmConfigure:
         secret_content = ca_certificates_secret.latest_content
         assert secret_content is not None
         assert secret_content["ca-certificate"] == str(new_ca)
-        patch_generate_ca.assert_called_with(
+        mock_generate_ca.assert_called_with(
             private_key=ca_private_key,
             common_name="pizza.example.com",
             organization=None,
@@ -185,8 +185,8 @@ class TestCharmConfigure:
     @patch("charm.generate_ca")
     def test_given_root_ca_about_to_expire_then_root_ca_is_marked_expiring_and_new_one_is_generated(  # noqa: E501
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
         initial_ca_private_key = generate_private_key()
         new_ca_private_key = generate_private_key()
@@ -200,8 +200,8 @@ class TestCharmConfigure:
             common_name="example.com",
             validity=timedelta(minutes=2),
         )
-        patch_generate_ca.return_value = new_ca_certificate
-        patch_generate_private_key.return_value = new_ca_private_key
+        mock_generate_ca.return_value = new_ca_certificate
+        mock_generate_private_key.return_value = new_ca_private_key
         ca_certificate_secret = scenario.Secret(
             {
                 "ca-certificate": str(initial_ca_certificate),
@@ -248,9 +248,9 @@ class TestCharmConfigure:
     @patch("charm.generate_certificate")
     def test_given_outstanding_certificate_requests_when_config_changed_then_certificates_are_generated(  # noqa: E501
         self,
-        patch_generate_certificate,
-        patch_get_outstanding_certificate_requests,
-        patch_set_relation_certificate,
+        mock_generate_certificate: MagicMock,
+        mock_get_outstanding_certificate_requests: MagicMock,
+        mock_set_relation_certificate: MagicMock,
     ):
         requirer_private_key = generate_private_key()
         provider_private_key = generate_private_key()
@@ -279,14 +279,14 @@ class TestCharmConfigure:
             owner="app",
             expire=datetime.now() + timedelta(days=100),
         )
-        patch_get_outstanding_certificate_requests.return_value = [
+        mock_get_outstanding_certificate_requests.return_value = [
             RequirerCertificateRequest(
                 relation_id=tls_relation.id,
                 certificate_signing_request=requirer_csr,
                 is_ca=False,
             ),
         ]
-        patch_generate_certificate.return_value = certificate
+        mock_generate_certificate.return_value = certificate
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
@@ -308,7 +308,7 @@ class TestCharmConfigure:
             ca=provider_ca,
             chain=[provider_ca, certificate],
         )
-        patch_set_relation_certificate.assert_called_with(
+        mock_set_relation_certificate.assert_called_with(
             provider_certificate=expected_provider_certificate,
         )
 
@@ -317,9 +317,9 @@ class TestCharmConfigure:
     @patch("charm.generate_certificate")
     def test_given_outstanding_certificate_requests_and_limit_reached_when_config_changed_then_certificate_number_is_limited(  # noqa: E501
         self,
-        patch_generate_certificate,
-        patch_get_outstanding_certificate_requests,
-        patch_set_relation_certificate,
+        mock_generate_certificate: MagicMock,
+        mock_get_outstanding_certificate_requests: MagicMock,
+        mock_set_relation_certificate: MagicMock,
     ):
         requirer_private_key = generate_private_key()
         provider_private_key = generate_private_key()
@@ -362,7 +362,7 @@ class TestCharmConfigure:
             owner="app",
             expire=datetime.now() + timedelta(days=100),
         )
-        patch_get_outstanding_certificate_requests.return_value = [
+        mock_get_outstanding_certificate_requests.return_value = [
             RequirerCertificateRequest(
                 relation_id=tls_relation.id,
                 certificate_signing_request=requirer_csr_1,
@@ -379,7 +379,7 @@ class TestCharmConfigure:
                 is_ca=False,
             ),
         ]
-        patch_generate_certificate.side_effect = [certificate_1, certificate_2, certificate_3]
+        mock_generate_certificate.side_effect = [certificate_1, certificate_2, certificate_3]
         state_in = scenario.State(
             config={
                 "ca-common-name": "example.com",
@@ -408,26 +408,26 @@ class TestCharmConfigure:
             ca=provider_ca,
             chain=[provider_ca, certificate_2],
         )
-        patch_set_relation_certificate.assert_has_calls(
+        mock_set_relation_certificate.assert_has_calls(
             [
                 call(provider_certificate=expected_provider_certificate_1),
                 call(provider_certificate=expected_provider_certificate_2),
             ]
         )
-        assert patch_generate_certificate.call_count == 2
+        assert mock_generate_certificate.call_count == 2
 
     @pytest.mark.skip(reason="https://github.com/canonical/operator/issues/1316")
     @patch("charm.generate_private_key")
     @patch("charm.generate_ca")
     def test_given_valid_config_and_unit_is_leader_when_secret_expired_then_new_ca_certificate_is_stored_in_juju_secret(  # noqa: E501
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
         ca_certificate_string = "whatever CA certificate"
         private_key_string = "whatever private key"
-        patch_generate_ca.return_value = ca_certificate_string
-        patch_generate_private_key.return_value = private_key_string
+        mock_generate_ca.return_value = ca_certificate_string
+        mock_generate_private_key.return_value = private_key_string
 
         ca_certificates_secret = scenario.Secret(
             {
@@ -463,8 +463,8 @@ class TestCharmConfigure:
     @patch("charm.generate_ca")
     def test_given_initial_config_when_config_changed_then_stored_ca_common_name_uses_new_config(
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_private_key_generator: MagicMock,
     ):
         initial_ca_private_key = generate_private_key()
         new_ca_private_key = generate_private_key()
@@ -478,8 +478,8 @@ class TestCharmConfigure:
             common_name="common-name-new.example.com",
             validity=timedelta(days=100),
         )
-        patch_generate_ca.return_value = new_ca_certificate
-        patch_generate_private_key.return_value = new_ca_private_key
+        mock_generate_ca.return_value = new_ca_certificate
+        mock_private_key_generator.return_value = new_ca_private_key
 
         ca_certificates_secret = scenario.Secret(
             {

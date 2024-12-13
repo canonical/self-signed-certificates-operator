@@ -7,7 +7,7 @@
 import logging
 import typing
 from datetime import datetime, timedelta
-from typing import Iterator, Optional, cast
+from typing import Any, Iterator, Optional, cast
 
 from charms.certificate_transfer_interface.v0.certificate_transfer import (
     CertificateTransferProvides,
@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 class SelfSignedCertificatesCharm(CharmBase):
     """Main class to handle Juju events."""
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any):
         """Observe config change and certificate request events."""
         super().__init__(*args)
         self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
@@ -515,7 +515,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         ca_certificate_secret_content = ca_certificate_secret.get_content(refresh=True)
         event.set_results({"ca-certificate": ca_certificate_secret_content["ca-certificate"]})
 
-    def _send_ca_cert(self, *, rel_id=None):
+    def _send_ca_cert(self, *, rel_id: Optional[int] = None):
         """There is one (and only one) CA cert that we need to forward to multiple apps.
 
         Args:
