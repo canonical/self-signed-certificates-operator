@@ -3,7 +3,7 @@
 
 import json
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import scenario
@@ -40,7 +40,7 @@ class TestCharmGetIssuedCertificates:
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_issued_certificates")
     def test_given_certificates_issued_when_get_issued_certificates_action_then_action_returns_certificates(  # noqa: E501
         self,
-        patch_get_issued_certificates,
+        mock_get_issued_certificates: MagicMock,
     ):
         ca_private_key = generate_private_key()
         ca_certificate = generate_ca(
@@ -58,7 +58,7 @@ class TestCharmGetIssuedCertificates:
         )
         chain = [ca_certificate, certificate]
         revoked = False
-        patch_get_issued_certificates.return_value = [
+        mock_get_issued_certificates.return_value = [
             ProviderCertificate(
                 relation_id=1,
                 certificate_signing_request=csr,

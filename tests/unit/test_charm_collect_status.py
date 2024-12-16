@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import scenario
@@ -69,11 +69,11 @@ class TestCharmCollectStatus:
     @patch("charm.generate_ca")
     def test_given_valid_config_when_collect_unit_status_then_status_is_active(
         self,
-        patch_generate_ca,
-        patch_generate_private_key,
+        mock_generate_ca: MagicMock,
+        mock_generate_private_key: MagicMock,
     ):
-        patch_generate_ca.return_value = "whatever CA certificate"
-        patch_generate_private_key.return_value = "whatever private key"
+        mock_generate_ca.return_value = "whatever CA certificate"
+        mock_generate_private_key.return_value = "whatever private key"
         state_in = scenario.State(
             config={
                 "ca-common-name": "pizza.example.com",

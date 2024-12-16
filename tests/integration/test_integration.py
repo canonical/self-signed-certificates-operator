@@ -60,10 +60,10 @@ async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str)
 
 @pytest.fixture(scope="module")
 @pytest.mark.abort_on_fail
-async def deploy(ops_test: OpsTest, request):
+async def deploy(ops_test: OpsTest, request: pytest.FixtureRequest) -> None:
     """Build the charm-under-test and deploy it."""
     assert ops_test.model
-    charm = Path(request.config.getoption("--charm_path")).resolve()
+    charm = Path(str(request.config.getoption("--charm_path"))).resolve()
     logger.info("Deploying charms for architecture: %s", ARCH)
     await ops_test.model.set_constraints({"arch": ARCH})
     await ops_test.model.deploy(
@@ -96,7 +96,7 @@ async def deploy(ops_test: OpsTest, request):
 @pytest.mark.abort_on_fail
 async def test_given_charm_is_built_when_deployed_then_status_is_active(
     ops_test: OpsTest,
-    deploy,
+    deploy: None,
 ):
     assert ops_test.model
     await ops_test.model.wait_for_idle(
@@ -108,7 +108,7 @@ async def test_given_charm_is_built_when_deployed_then_status_is_active(
 
 async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_is_provided(
     ops_test: OpsTest,
-    deploy,
+    deploy: None,
 ):
     assert ops_test.model
     await ops_test.model.integrate(
@@ -124,7 +124,7 @@ async def test_given_tls_requirer_is_deployed_when_integrated_then_certificate_i
 
 async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_changed_then_new_certificate_is_provided(  # noqa: E501
     ops_test: OpsTest,
-    deploy,
+    deploy: None,
 ):
     new_common_name = "newexample.org"
     assert ops_test.model
@@ -142,7 +142,7 @@ async def test_given_tls_requirer_is_integrated_when_ca_common_name_config_chang
 
 async def test_given_tls_requirer_is_integrated_when_certificates_expires_then_new_certificate_is_provided(  # noqa: E501
     ops_test: OpsTest,
-    deploy,
+    deploy: None,
 ):
     new_common_name = "newexample.org"
     assert ops_test.model
@@ -193,7 +193,7 @@ async def test_given_tls_requirer_is_integrated_when_certificates_expires_then_n
 
 async def test_given_charm_scaled_then_charm_does_not_crash(
     ops_test: OpsTest,
-    deploy,
+    deploy: None,
 ):
     assert ops_test.model
     await ops_test.model.applications[APP_NAME].scale(2)  # type: ignore
@@ -202,7 +202,7 @@ async def test_given_charm_scaled_then_charm_does_not_crash(
     await ops_test.model.wait_for_idle(apps=[APP_NAME], timeout=1000, wait_for_exact_units=1)
 
 
-async def run_get_certificate_action(ops_test) -> Dict[str, str]:
+async def run_get_certificate_action(ops_test: OpsTest) -> Dict[str, str]:
     """Run `get-certificate` on the `tls-requirer-requirer/0` unit.
 
     Args:

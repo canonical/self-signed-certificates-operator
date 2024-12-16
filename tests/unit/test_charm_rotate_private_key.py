@@ -1,7 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import scenario
@@ -31,7 +31,7 @@ class TestCharmRotatePrivateKey:
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
     def test_given_rotate_private_key_action_when_certificates_revoked_and_root_certificate_generated_then_action_succeeds(  # noqa: E501
         self,
-        patch_revoke_all_certificates,
+        patch_revoke_all_certificates: MagicMock,
     ):
         state_in = scenario.State(
             leader=True,
@@ -46,7 +46,7 @@ class TestCharmRotatePrivateKey:
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
     def test_given_rotate_private_key_action_when_config_is_invalid_then_action_fails(  # noqa: E501
         self,
-        patch_revoke_all_certificates,
+        mock_revoke_all_certificates: MagicMock,
     ):
         state_in = scenario.State(
             leader=True,
