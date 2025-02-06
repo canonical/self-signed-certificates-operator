@@ -93,9 +93,9 @@ class TestCharmConfigure:
         expected_delta = timedelta(days=root_ca_validity - certificate_validity)
         actual_delta = ca_certificates_secret_expiry - datetime.now()
         tolerance = timedelta(seconds=1)
-        assert (
-            abs(actual_delta - expected_delta) <= tolerance
-        ), f"Expected: {expected_delta}, but got: {actual_delta}"
+        assert abs(actual_delta - expected_delta) <= tolerance, (
+            f"Expected: {expected_delta}, but got: {actual_delta}"
+        )
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.revoke_all_certificates")
     @patch("charm.generate_private_key")
