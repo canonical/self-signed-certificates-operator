@@ -1,4 +1,5 @@
 # self-signed-certificates-operator
+![CI Status](https://github.com/canonical/self-signed-certificates-operator/actions/workflows/main.yaml/badge.svg)
 [![CharmHub Badge](https://charmhub.io/self-signed-certificates/badge.svg)](https://charmhub.io/self-signed-certificates)
 
 An operator to provide self-signed X.509 certificates to your charms.
