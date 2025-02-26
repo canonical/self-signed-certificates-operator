@@ -21,6 +21,11 @@ jobs:
   promote:
     name: Promote Charm
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        base:
+          - 22.04
+          - 24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,5 +51,5 @@ jobs:
           destination-channel: latest/${{ env.promote-to }}
           origin-channel: latest/${{ env.promote-from }}
           charmcraft-channel: latest/stable
-          base-channel: "22.04"
+          base-channel: ${{ matrix.base }}
           base-architecture: ${{ github.event.inputs.arch }}

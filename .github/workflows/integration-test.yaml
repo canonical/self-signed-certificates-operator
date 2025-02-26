@@ -10,8 +10,16 @@ jobs:
         arch:
           - arch: amd64
             runner: ubuntu-22.04
+            platform: ubuntu@22.04:amd64
           - arch: arm64
             runner: [self-hosted, linux, ARM64, medium, jammy]
+            platform: ubuntu@22.04:arm64
+          - arch: amd64
+            runner: ubuntu-24.04
+            platform: ubuntu@24.04:amd64
+          - arch: arm64
+            runner: [self-hosted, linux, ARM64, medium, noble]
+            platform: ubuntu@24.04:arm64
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - name: Checkout
@@ -20,7 +28,7 @@ jobs:
       - name: Fetch Charm Under Test
         uses: actions/download-artifact@v4
         with:
-          name: built-charm-${{ matrix.arch.arch }}
+          name: built-charm-${{ matrix.arch.platform }}
           path: built/
 
       - name: Get Charm Under Test Path
