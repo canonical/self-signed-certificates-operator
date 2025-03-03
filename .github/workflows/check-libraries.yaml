@@ -8,9 +8,9 @@ on:
 
 jobs:
   check-libraries:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: canonical/charming-actions/check-libraries@2.6.2
+      - uses: canonical/charming-actions/check-libraries@2.7.0
         with:
           credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
