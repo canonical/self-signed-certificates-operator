@@ -8,7 +8,7 @@ resource "juju_application" "self-signed-certificates" {
   charm {
     name    = "self-signed-certificates"
     channel = var.channel
-    base    = "ubuntu@22.04"
+    base    = "ubuntu@24.04"
   }
   config = var.config
   units  = 1

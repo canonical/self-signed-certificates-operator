@@ -46,5 +46,5 @@ jobs:
           destination-channel: 1/${{ env.promote-to }}
           origin-channel: 1/${{ env.promote-from }}
           charmcraft-channel: latest/stable
-          base-channel: "22.04"
+          base-channel: "24.04"
           base-architecture: ${{ github.event.inputs.arch }}
