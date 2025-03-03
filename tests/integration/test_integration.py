@@ -69,7 +69,6 @@ async def deploy(ops_test: OpsTest, request: pytest.FixtureRequest) -> None:
     await ops_test.model.deploy(
         charm,
         application_name=APP_NAME,
-        series="jammy",
         trust=True,
         config={
             "ca-common-name": CA_COMMON_NAME,
