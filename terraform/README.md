@@ -11,7 +11,7 @@ The base module is not intended to be deployed in separation (it is possible tho
 - **main.tf** - Defines the Juju application to be deployed.
 - **variables.tf** - Allows customization of the deployment. Except for exposing the deployment options (Juju model name, channel or application name) also models the charm configuration.
 - **output.tf** - Responsible for integrating the module with other Terraform modules, primarily by defining potential integration endpoints (charm integrations), but also by exposing the application name.
-- **terraform.tf** - Defines the Terraform provider.
+- **versions.tf** - Defines the Terraform provider.
 
 ## Pre-requisites
 
@@ -30,7 +30,7 @@ If you want to use `self-signed-certificates` base module as part of your Terraf
 module "self-signed-certificates {
   source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform"
   
-  model_name = "juju_model_name"
+  model = "juju_model_name"
   (Customize configuration variables here if needed)
 }
 ```
@@ -42,13 +42,13 @@ resource "juju_integration" "amf-certificates" {
   model = var.model_name
 
   application {
-    name     = module.amf.app_name
-    endpoint = module.amf.certificates_endpoint
+    name     = module.some-app.app_name
+    endpoint = module.some-app.certificates_endpoint
   }
 
   application {
     name     = module.self-signed-certificates.app_name
-    endpoint = module.self-signed-certificates.certificates_endpoint
+    endpoint = module.self-signed-certificates.provides.certificates
   }
 }
 ```
