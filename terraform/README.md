@@ -38,8 +38,8 @@ module "self-signed-certificates {
 Create the integrations, for instance:
 
 ```text
-resource "juju_integration" "amf-certificates" {
-  model = var.model_name
+resource "juju_integration" "certificates-endpoint-integration" {
+  model = var.model
 
   application {
     name     = module.some-app.app_name
