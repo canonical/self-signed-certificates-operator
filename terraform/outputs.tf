@@ -6,14 +6,15 @@ output "app_name" {
   value       = juju_application.self-signed-certificates.name
 }
 
-# Provided integration endpoints
-
-output "certificates_endpoint" {
-  description = "Name of the endpoint provided for `tls-certificates` interface."
-  value       = "certificates"
+output "requires" {
+  value = {
+    tracing = "tracing"
+  }
 }
 
-output "send_ca_cert_endpoint" {
-  description = "Name of the endpoint provided for `certificate_transfer` interface."
-  value       = "send-ca-cert"
+output "provides" {
+  value = {
+    certificates = "certificates"
+    send-ca-cert = "send-ca-cert"
+  }
 }
