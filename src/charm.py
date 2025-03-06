@@ -9,7 +9,7 @@ import typing
 from datetime import datetime, timedelta
 from typing import Any, Iterator, Optional, cast
 
-from charms.certificate_transfer_interface.v0.certificate_transfer import (
+from charms.certificate_transfer_interface.v1.certificate_transfer import (
     CertificateTransferProvides,
 )
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
@@ -523,15 +523,11 @@ class SelfSignedCertificatesCharm(CharmBase):
         """
         if not self._root_certificate_is_stored:
             return
-        send_ca_cert = CertificateTransferProvides(self, SEND_CA_CERT_REL_NAME)
+        certificate_transfer = CertificateTransferProvides(self, SEND_CA_CERT_REL_NAME)
         secret = self.model.get_secret(label=CA_CERTIFICATES_SECRET_LABEL)
         secret_content = secret.get_content(refresh=True)
         ca = secret_content["ca-certificate"]
-        if rel_id:
-            send_ca_cert.set_certificate("", ca, [], relation_id=rel_id)
-        else:
-            for relation in self.model.relations.get(SEND_CA_CERT_REL_NAME, []):
-                send_ca_cert.set_certificate("", ca, [], relation_id=relation.id)
+        certificate_transfer.add_certificates({ca}, relation_id=rel_id)
 
     def _push_ca_cert_to_container(self, ca_certificate: str):
         """Store the CA certificate in the charm container.

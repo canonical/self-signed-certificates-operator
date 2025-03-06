@@ -1,6 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+import json
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, call, mock_open, patch
 
@@ -545,9 +546,9 @@ class TestCharmConfigure:
 
         state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
 
-        assert state_out.get_relation(traefik_relation.id).local_unit_data["ca"] == str(
-            provider_ca
-        )
-        assert state_out.get_relation(another_relation.id).local_unit_data["ca"] == str(
-            provider_ca
-        )
+        assert state_out.get_relation(traefik_relation.id).local_app_data[
+            "certificates"
+        ] == json.dumps([str(provider_ca)])
+        assert state_out.get_relation(another_relation.id).local_app_data[
+            "certificates"
+        ] == json.dumps([str(provider_ca)])
