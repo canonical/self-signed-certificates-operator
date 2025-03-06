@@ -8,9 +8,10 @@ from unittest.mock import Mock, mock_open, patch
 
 import ops
 import ops.testing
-from charm import SelfSignedCertificatesCharm
 from charms.tls_certificates_interface.v3.tls_certificates import ProviderCertificate, RequirerCSR
 from ops.model import ActiveStatus, BlockedStatus
+
+from charm import SelfSignedCertificatesCharm
 
 TLS_LIB_PATH = "charms.tls_certificates_interface.v3.tls_certificates"
 CA_CERT_PATH = "/tmp/ca-cert.pem"
