@@ -51,12 +51,19 @@ bases:
 
 parts:
   charm:
+    source: .
+    plugin: charm
+    charm-requirements:
+      - requirements.txt
     build-packages:
-      - cargo
       - libffi-dev
       - libssl-dev
       - pkg-config
-      - rustc
+    build-snaps:
+      - rustup
+    override-build: |
+      rustup default stable
+      craftctl default
 
 provides:
   certificates:
