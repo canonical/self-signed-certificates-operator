@@ -22,6 +22,15 @@ tox -e integration   # integration tests
 tox                      # runs 'format', 'lint', and 'unit' environments
 ```
 
+## Updating the requirements.txt and test-requirements.txt
+
+If you need to update the requirements for the charm, you can do so by using tox to ensure that the requirements are updated
+using the correct version of python, and the proper constraints are applied.
+
+```shell
+tox -e compile
+```
+
 ## Build the charm
 
 Build the charm in this git repository using:
