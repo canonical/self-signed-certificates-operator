@@ -24,6 +24,8 @@ TLS_REQUIRER_CHARM_NAME = "tls-certificates-requirer"
 CA_COMMON_NAME = "example.com"
 
 ARCH = "arm64" if platform.machine() == "aarch64" else "amd64"
+REQUIRER_CHARM_REVISION_ARM = 142
+REQUIRER_CHARM_REVISION_AMD = 143
 
 
 async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str) -> Dict[str, str]:
@@ -75,11 +77,8 @@ async def deploy(ops_test: OpsTest, request):
     await ops_test.model.deploy(
         TLS_REQUIRER_CHARM_NAME,
         application_name=TLS_REQUIRER_CHARM_NAME,
-        # TLSENG-656: Until a newer version of tls-certificates-requirer is
-        # published to stable for amd64, the have different return values for
-        # the get-certificate action. This can be changed to just "stable" once
-        # the newer version is published.
-        channel="stable" if ARCH == "amd64" else "edge",
+        revision=REQUIRER_CHARM_REVISION_ARM if ARCH == "arm64" else REQUIRER_CHARM_REVISION_AMD,
+        channel="stable",
         constraints={"arch": ARCH},
         config={"mode": "unit"},
     )
