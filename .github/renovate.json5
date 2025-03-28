@@ -6,6 +6,10 @@
     ':noUnscheduledUpdates',
     ':semanticCommits',
   ],
+  baseBranches: [
+    'main',
+    'latest',
+  ],
   automerge: true,
   automergeStrategy: 'squash',
   automergeType: 'pr',
