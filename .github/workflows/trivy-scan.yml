@@ -23,6 +23,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # For push events, this will use the pushed branch
+          # For PRs, this will use the PR's head
+          # For scheduled events, this defaults to main
+          ref: ${{ (github.event_name == 'push' && github.ref) || (github.event_name == 'pull_request' && github.event.pull_request.head.sha) || 'main' }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -34,6 +40,31 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+          category: "trivy"
+
+      # Run latest branch scan during scheduled events and PRs
+      - name: Checkout latest branch
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
+        uses: actions/checkout@v4
+        with:
+          ref: latest
+          fetch-depth: 0
+
+      - name: Run Trivy on latest branch
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Upload latest branch Trivy results
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'pull_request' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
