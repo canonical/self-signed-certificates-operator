@@ -1,0 +1,14 @@
+name: TiCS Static Analysis
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # Every Sunday at 3 am
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  analyze-k8s:
+    uses: canonical/identity-credentials-workflows/.github/workflows/tics-tox.yaml@v0
+    with:
+      project: self-signed-certificates-operator
+    secrets:
+      TICSAUTHTOKEN: ${{ secrets.TICSAUTHTOKEN }}
