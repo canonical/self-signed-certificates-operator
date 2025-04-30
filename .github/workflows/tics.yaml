@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Allows manual triggering
 
 jobs:
-  analyze-k8s:
+  analyze:
     uses: canonical/identity-credentials-workflows/.github/workflows/tics-tox.yaml@v0
     with:
       project: self-signed-certificates-operator
