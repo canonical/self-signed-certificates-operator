@@ -36,12 +36,6 @@ def build_charm(path: Path) -> Path:
     return next(path.glob("*.charm"))
 
 
-# @pytest.fixture(scope="module")
-# def self_signed_certificates_charm():
-#     charm_path = build_charm(Path(f"{REQUIRER_CHARM_DIR}/").absolute())
-#     yield charm_path
-
-
 @pytest.fixture(scope="module")
 def juju():
     with jubilant.temp_model() as juju:
@@ -52,6 +46,4 @@ def juju():
 def test_deploy(juju: jubilant.Juju, request: pytest.FixtureRequest):
     charm = Path(str(request.config.getoption("--charm_path"))).resolve()
     juju.deploy(charm, "self-signed-certificates")
-    juju.wait(jubilant.all_active)
-
     juju.wait(jubilant.all_active)
