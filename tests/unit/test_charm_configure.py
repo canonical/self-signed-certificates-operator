@@ -307,7 +307,7 @@ class TestCharmConfigure:
             certificate=certificate,
             certificate_signing_request=requirer_csr,
             ca=provider_ca,
-            chain=[provider_ca, certificate],
+            chain=[certificate, provider_ca],
         )
         mock_set_relation_certificate.assert_called_with(
             provider_certificate=expected_provider_certificate,
@@ -400,14 +400,14 @@ class TestCharmConfigure:
             certificate=certificate_1,
             certificate_signing_request=requirer_csr_1,
             ca=provider_ca,
-            chain=[provider_ca, certificate_1],
+            chain=[certificate_1, provider_ca],
         )
         expected_provider_certificate_2 = ProviderCertificate(
             relation_id=tls_relation.id,
             certificate=certificate_2,
             certificate_signing_request=requirer_csr_2,
             ca=provider_ca,
-            chain=[provider_ca, certificate_2],
+            chain=[certificate_2, provider_ca],
         )
         mock_set_relation_certificate.assert_has_calls(
             [

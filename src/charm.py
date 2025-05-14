@@ -495,8 +495,8 @@ class SelfSignedCertificatesCharm(CharmBase):
                 certificate_signing_request=csr,
                 ca=ca_certificate,
                 chain=[
-                    ca_certificate,
                     certificate,
+                    ca_certificate,
                 ],
             ),
         )
