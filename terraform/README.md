@@ -27,7 +27,7 @@ The following tools needs to be installed and should be running in the environme
 If you want to use `self-signed-certificates` base module as part of your Terraform module, import it like shown below.
 
 ```text
-module "self-signed-certificates {
+module "self-signed-certificates" {
   source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform"
   
   model = "juju_model_name"
