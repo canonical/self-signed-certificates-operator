@@ -16,3 +16,17 @@ resource "juju_application" "self-signed-certificates" {
   constraints = var.constraints
   units       = var.units
 }
+
+resource "juju_offer" "send_ca_cert" {
+  name             = "send-ca-cert"
+  model            = var.model
+  application_name = var.app_name
+  endpoints        = ["send-ca-cert"]
+}
+
+resource "juju_offer" "certificates" {
+  name             = "certificates"
+  model            = var.model
+  application_name = var.app_name
+  endpoints        = ["certificates"]
+}

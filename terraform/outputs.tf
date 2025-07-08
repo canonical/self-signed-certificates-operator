@@ -18,3 +18,10 @@ output "provides" {
     send-ca-cert = "send-ca-cert"
   }
 }
+
+output "offers" {
+  value = {
+    send-ca-cert = juju_offer.send_ca_cert
+    certificates = juju_offer.certificates
+  }
+}
