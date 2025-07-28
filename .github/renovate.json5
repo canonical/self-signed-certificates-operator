@@ -3,5 +3,5 @@
     "extends": [
         "https://raw.githubusercontent.com/canonical/identity-credentials-workflows/refs/heads/v0/renovate.json5"
     ],
-    "baseBranches": ["main", "latest"]
+    "baseBranchPatterns": ["main", "latest"]
 }
