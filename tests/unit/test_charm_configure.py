@@ -513,6 +513,7 @@ class TestCharmConfigure:
         traefik_relation = scenario.Relation(
             endpoint="send-ca-cert",
             interface="certificate_transfer",
+            remote_app_data={"version": "1"},
         )
         another_relation = scenario.Relation(
             endpoint="send-ca-cert",
@@ -545,10 +546,17 @@ class TestCharmConfigure:
         )
 
         state_out = self.ctx.run(self.ctx.on.config_changed(), state=state_in)
-
+        
+        # traefik_relation uses v1 format (app databag)
         assert state_out.get_relation(traefik_relation.id).local_app_data[
             "certificates"
         ] == json.dumps([str(provider_ca)])
-        assert state_out.get_relation(another_relation.id).local_app_data[
-            "certificates"
-        ] == json.dumps([str(provider_ca)])
+        
+        # another_relation uses v0 format (unit databag)
+        another_relation_certificates = json.loads(
+            state_out.get_relation(another_relation.id).local_unit_data["certificates"]
+        )
+        assert len(another_relation_certificates) == 1
+        assert another_relation_certificates[0]["ca"] == str(provider_ca)
+        assert another_relation_certificates[0]["certificate"] == str(provider_ca)
+        assert another_relation_certificates[0]["chain"] == [str(provider_ca)]
