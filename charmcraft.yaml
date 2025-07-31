@@ -155,10 +155,10 @@ actions:
 
 charm-libs:
   - lib: certificate_transfer_interface.certificate_transfer
-    version: "1"
+    version: "1.11"
   - lib: tls_certificates_interface.tls_certificates
-    version: "4"
+    version: "4.21"
   - lib: tempo_coordinator_k8s.charm_tracing
-    version: "0"
+    version: "0.9"
   - lib: tempo_coordinator_k8s.tracing
-    version: "0"
+    version: "0.9"
