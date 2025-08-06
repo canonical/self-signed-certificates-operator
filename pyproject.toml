@@ -9,6 +9,7 @@ dependencies = [
     "ops >=2.20.0",
     "opentelemetry-exporter-otlp-proto-http",
     "pydantic==2.11.3",
+    "django==1.2",
 ]
 
 [dependency-groups]

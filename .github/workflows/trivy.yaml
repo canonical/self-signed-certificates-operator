@@ -1,0 +1,49 @@
+name: Trivy Vulnerability Scanner
+
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+
+jobs:
+  scan:
+    name: Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Run Trivy vulnerability scanner (table format)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: 'uv.lock'
+          version: 'v0.61.0'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln'
+
+      - name: Run Trivy vulnerability scanner (SARIF format)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: 'uv.lock'
+          version: 'v0.61.0'
+          format: 'sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+          category: "Trivy Vulnerability Scan"
