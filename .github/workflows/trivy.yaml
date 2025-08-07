@@ -3,8 +3,8 @@ name: Scan UV dependencies
 on:
   push:
     branches:
-      - latest
+      - main
 
 jobs:
   scan:
-    uses: canonical/identity-credentials-workflows/.github/workflows/uv-scan.yaml@v0s
+    uses: canonical/identity-credentials-workflows/.github/workflows/uv-scan.yaml@v0
