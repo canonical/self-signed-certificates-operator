@@ -17,11 +17,46 @@ jobs:
     uses: canonical/identity-credentials-workflows/.github/workflows/lint-report.yaml@v0
 
   static-analysis:
-    name: Static analysis
-    uses: canonical/identity-credentials-workflows/.github/workflows/static-analysis.yaml@v0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic
+
+      - name: Fetch charmcraft libs
+        run: charmcraft fetch-libs
+
+      - name: Install uv
+        run: sudo snap install --classic astral-uv
+
+      - name: Install tox
+        run: uv tool install tox --with tox-uv
+
+      - name: Run tests using tox
+        run: |
+          tox -e static
 
   unit-tests-with-coverage:
-    uses: canonical/identity-credentials-workflows/.github/workflows/unit-test.yaml@v0
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic
+
+      - name: Fetch charmcraft libs
+        run: charmcraft fetch-libs
+
+      - name: Install uv
+        run: sudo snap install --classic astral-uv
+
+      - name: Install tox
+        run: uv tool install tox --with tox-uv
+
+      - name: Run tests using tox
+        run: |
+          tox -e unit
 
   build:
     needs:
