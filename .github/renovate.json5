@@ -10,10 +10,10 @@
   automergeStrategy: "squash",
   automergeType: "pr",
   platformAutomerge: true,
-  schedule: ["after 1am and before 3am every monday"],
+  schedule: ["after 1am and before 3am on monday"],
   lockFileMaintenance: {
     enabled: true,
-    schedule: ["after 1am and before 3am every day"],
+    schedule: ["after 1am and before 3am on wednesday"],
   },
   timezone: "Etc/UTC",
   enabledManagers: ["pep621", "github-actions", "terraform"],
@@ -42,10 +42,6 @@
     {
       matchManagers: ["terraform"],
       groupName: "Terraform",
-    },
-    {
-      baseBranchPatterns: ["main", "latest", "test-renovate-*"],
-      useBaseBranchConfig: "merge",
     },
   ],
 }
