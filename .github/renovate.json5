@@ -1,19 +1,14 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: [
-    "config:recommended",
-    ":disableRateLimiting",
-    ":noUnscheduledUpdates",
-    ":semanticCommits",
-  ],
+  extends: ["config:recommended", ":disableRateLimiting", ":semanticCommits"],
   automerge: true,
   automergeStrategy: "squash",
   automergeType: "pr",
   platformAutomerge: true,
-  schedule: ["after 1am and before 3am on monday"],
+  schedule: ["at any time"],
   lockFileMaintenance: {
     enabled: true,
-    schedule: ["after 1am and before 3am on wednesday"],
+    schedule: ["at any time"],
   },
   timezone: "Etc/UTC",
   enabledManagers: ["pep621", "github-actions", "terraform"],
