@@ -39,4 +39,6 @@
       groupName: "Terraform",
     },
   ],
+  baseBranchPatterns: ["main", "latest"],
+  useBaseBranchConfig: "merge",
 }
