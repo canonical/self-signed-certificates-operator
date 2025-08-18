@@ -13,6 +13,7 @@
   schedule: ["after 1am and before 3am every monday"],
   lockFileMaintenance: {
     enabled: true,
+    schedule: ["after 1am and before 3am every day"],
   },
   timezone: "Etc/UTC",
   enabledManagers: ["pep621", "github-actions", "terraform"],
