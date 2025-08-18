@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 dependencies = [
     "cryptography",
     "jsonschema",
-    "ops >=2.20.0",
+    "ops >=3.1.0",
     "opentelemetry-exporter-otlp-proto-http",
     "pydantic==2.11.3",
 ]
@@ -17,7 +17,7 @@ test = [
     "juju",
     "pytest",
     "pytest-operator",
-    "pytest-asyncio==0.21.2",
+    "pytest-asyncio==1.1.0",
     "ops[testing]",
 ]
 dev = [
