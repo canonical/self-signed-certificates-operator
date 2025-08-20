@@ -1,31 +1,64 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "https://raw.githubusercontent.com/canonical/identity-credentials-workflows/refs/heads/v0/renovate.json5"
-    ],
-    "baseBranchPatterns": ["main", "latest"],
-    "useBaseBranchConfig": "merge"
-    "enabledManagers": ["pep621", "github-actions", "terraform", "regex"],
-    "customManagers": [
-        {
-            "customType": "regex",
-            "fileMatch": ["charmcraft.yaml"],
-            "matchStrings": [
-                "- lib: certificate_transfer_interface\\.certificate_transfer[\\s\\S]*?version: [\"'](?<currentValue>[^\"']+)[\"']"
-            ],
-            "depNameTemplate": "certificate_transfer_interface.certificate_transfer",
-            "datasourceTemplate": "custom.charmhub-certificate-transfer",
-            "versioningTemplate": "loose"
-        }
-    ],
-    "customDatasources": {
-        "charmhub-certificate-transfer": {
-            "defaultRegistryUrlTemplate": "https://api.charmhub.io/v1/charm/libraries/certificate-transfer-interface/3785165b24a743f2b0c60de52db25c8b?api=1",
-            "format": "json",
-            "transformTemplates": [
-                "{\"releases\":[{\"version\": api & \".\" & patch}]}"
-            ]
-        }
-    }
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", ":disableRateLimiting", ":semanticCommits"],
+  automerge: true,
+  automergeStrategy: "squash",
+  automergeType: "pr",
+  platformAutomerge: true,
+  schedule: ["at any time"],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["at any time"],
+  },
+  timezone: "Etc/UTC",
+  enabledManagers: ["pep621", "github-actions", "terraform"],
+  packageRules: [
+    // Later rules override earlier rules
+    {
+      matchManagers: ["pep621"],
+      rangeStrategy: "bump",
+      groupName: "Python dependencies",
+    },
+    {
+      // Disable updating Python, should be done when updating the Ubuntu base
+      matchPackageNames: ["python"],
+      enabled: false,
+    },
+    {
+      // Bumping "pytest-asyncio" over 0.23 breaks the integration tests
+      matchPackageNames: ["pytest-asyncio"],
+      matchUpdateTypes: ["minor"],
+      enabled: false,
+    },
+    {
+      matchManagers: ["github-actions"],
+      groupName: "GitHub actions",
+    },
+    {
+      matchManagers: ["terraform"],
+      groupName: "Terraform",
+    },
+  ],
+  baseBranchPatterns: ["main", "latest"],
+  useBaseBranchConfig: "merge",
+  enabledManagers: ["pep621", "github-actions", "terraform", "regex"],
+  customManagers: [
+    {
+      customType: "regex",
+      fileMatch: ["charmcraft.yaml"],
+      matchStrings: [
+        "- lib: certificate_transfer_interface\\.certificate_transfer[\\s\\S]*?version: [\"'](?<currentValue>[^\"']+)[\"']",
+      ],
+      depNameTemplate: "certificate_transfer_interface.certificate_transfer",
+      datasourceTemplate: "custom.charmhub-certificate-transfer",
+      versioningTemplate: "loose",
+    },
+  ],
+  customDatasources: {
+    "charmhub-certificate-transfer": {
+      defaultRegistryUrlTemplate: "https://api.charmhub.io/v1/charm/libraries/certificate-transfer-interface/3785165b24a743f2b0c60de52db25c8b?api=1",
+      format: "json",
+      transformTemplates: ['{"releases":[{"version": api & "." & patch}]}'],
+    },
+  },
 }
-
