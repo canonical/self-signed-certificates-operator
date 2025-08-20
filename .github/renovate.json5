@@ -11,7 +11,6 @@
     schedule: ["at any time"],
   },
   timezone: "Etc/UTC",
-  enabledManagers: ["pep621", "github-actions", "terraform"],
   packageRules: [
     // Later rules override earlier rules
     {
