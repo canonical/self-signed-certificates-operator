@@ -23,6 +23,20 @@ with:
 uv tool install tox --with tox-uv
 ```
 
+`charmcraft` is used to fetch the libraries used by this project. It can be installed with:
+
+```shell
+sudo snap install charmcraft --classic
+```
+
+Or follow https://documentation.ubuntu.com/charmcraft/latest/howto/manage-charmcraft/
+
+Then the libraries can be fetched with:
+
+```shell
+charmcraft fetch-libs
+```
+
 There are some pre-configured environments that can be used for linting
 and formatting code when you're preparing contributions to the charm:
 
@@ -41,4 +55,3 @@ Build the charm in this git repository using:
 ```shell
 charmcraft pack
 ```
-
