@@ -2,6 +2,11 @@ name: Build
 
 on:
   workflow_call:
+    inputs:
+      use-charmcraft-cache:
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-charm-under-test:
@@ -19,13 +24,21 @@ jobs:
       - name: Setup LXD
         uses: canonical/setup-lxd@main
         with:
-            channel: 5.21/stable
+          channel: 5.21/stable
     
       - name: Install charmcraft
-        run: sudo snap install charmcraft --classic
-
+        run: |
+          sudo snap install charmcraft --classic
+          echo CHARMCRAFT_BIN=charmcraft >> $GITHUB_ENV
+      
+      - name: Install charmcraft cache
+        if: ${{ inputs.use-charmcraft-cache }}
+        run: |
+          pip install charmcraftcache
+          echo CHARMCRAFT_CACHE_BIN=ccc >> $GITHUB_ENV
+    
       - name: Build charm under test
-        run: charmcraft pack --verbose
+        run: ${{ env.CHARMCRAFT_BIN }} pack --verbose
 
       - name: Archive Charm Under Test
         uses: actions/upload-artifact@v4
