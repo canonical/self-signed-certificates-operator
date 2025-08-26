@@ -52,10 +52,55 @@
       datasourceTemplate: "custom.charmhub-certificate-transfer",
       versioningTemplate: "loose",
     },
+    {
+      customType: "regex",
+      fileMatch: ["charmcraft.yaml"],
+      matchStrings: [
+        "- lib: tls_certificates_interface\\.tls_certificates[\\s\\S]*?version: [\"'](?<currentValue>[^\"']+)[\"']",
+      ],
+      depNameTemplate: "tls_certificates_interface.tls_certificates",
+      datasourceTemplate: "custom.charmhub-tls-certificates",
+      versioningTemplate: "loose",
+    },
+    {
+      customType: "regex",
+      fileMatch: ["charmcraft.yaml"],
+      matchStrings: [
+        "- lib: tempo_coordinator_k8s\\.charm_tracing[\\s\\S]*?version: [\"'](?<currentValue>[^\"']+)[\"']",
+      ],
+      depNameTemplate: "tempo_coordinator_k8s.charm_tracing",
+      datasourceTemplate: "custom.charmhub-tempo-charm-tracing",
+      versioningTemplate: "loose",
+    },
+    {
+      customType: "regex",
+      fileMatch: ["charmcraft.yaml"],
+      matchStrings: [
+        "- lib: tempo_coordinator_k8s\\.tracing[\\s\\S]*?version: [\"'](?<currentValue>[^\"']+)[\"']",
+      ],
+      depNameTemplate: "tempo_coordinator_k8s.tracing",
+      datasourceTemplate: "custom.charmhub-tempo-tracing",
+      versioningTemplate: "loose",
+    },
   ],
   customDatasources: {
     "charmhub-certificate-transfer": {
       defaultRegistryUrlTemplate: "https://api.charmhub.io/v1/charm/libraries/certificate-transfer-interface/3785165b24a743f2b0c60de52db25c8b?api=1",
+      format: "json",
+      transformTemplates: ['{"releases":[{"version": api & "." & patch}]}'],
+    },
+    "charmhub-tls-certificates": {
+      defaultRegistryUrlTemplate: "https://api.charmhub.io/v1/charm/libraries/tls-certificates-interface/afd8c2bccf834997afce12c2706d2ede?api=4",
+      format: "json",
+      transformTemplates: ['{"releases":[{"version": api & "." & patch}]}'],
+    },
+    "charmhub-tempo-charm-tracing": {
+      defaultRegistryUrlTemplate: "https://api.charmhub.io/v1/charm/libraries/tempo-coordinator-k8s/01780f1e588c42c3976d26780fdf9b89?api=0",
+      format: "json",
+      transformTemplates: ['{"releases":[{"version": api & "." & patch}]}'],
+    },
+    "charmhub-tempo-tracing": {
+      defaultRegistryUrlTemplate: "https://api.charmhub.io/v1/charm/libraries/tempo-coordinator-k8s/d2f02b1f8d1244b5989fd55bc3a28943?api=0",
       format: "json",
       transformTemplates: ['{"releases":[{"version": api & "." & patch}]}'],
     },
