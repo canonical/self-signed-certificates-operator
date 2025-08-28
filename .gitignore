@@ -1,3 +1,4 @@
+coverage.xml
 .charm_tracing_buffer.raw
 build/
 *.egg-info
@@ -14,6 +15,8 @@ build/
 
 # Charmcraft
 *.charm
+# lib files are fetched with `charmcraft fetch-libs`
+lib/
 
 # Local .terraform directories
 **/.terraform/*
