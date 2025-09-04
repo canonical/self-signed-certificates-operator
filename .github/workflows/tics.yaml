@@ -10,5 +10,6 @@ jobs:
     uses: canonical/identity-credentials-workflows/.github/workflows/tics-tox.yaml@v0
     with:
       project: self-signed-certificates-operator
+      fetch_libs: true
     secrets:
       TICSAUTHTOKEN: ${{ secrets.TICSAUTHTOKEN }}
