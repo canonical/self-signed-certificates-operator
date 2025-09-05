@@ -551,10 +551,7 @@ class TestCharmConfigure:
             "certificates"
         ] == json.dumps([str(provider_ca)])
 
-        another_relation_certificates = json.loads(
-            state_out.get_relation(another_relation.id).local_unit_data["certificates"]
-        )
-        assert len(another_relation_certificates) == 1
-        assert another_relation_certificates[0]["ca"] == str(provider_ca)
-        assert another_relation_certificates[0]["certificate"] == str(provider_ca)
-        assert another_relation_certificates[0]["chain"] == [str(provider_ca)]
+        another_relation_certificates = state_out.get_relation(another_relation.id).local_unit_data
+        assert another_relation_certificates["ca"] == json.dumps(str(provider_ca))
+        assert another_relation_certificates["certificate"] == json.dumps(str(provider_ca))
+        assert another_relation_certificates["chain"] == json.dumps([str(provider_ca)])
