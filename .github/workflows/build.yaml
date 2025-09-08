@@ -34,6 +34,14 @@ jobs:
       - name: Install charmcraft cache
         if: ${{ inputs.use-charmcraft-cache }}
         run: |
+          # Ensure pipx is available
+          if ! command -v pipx &> /dev/null; then
+            # Install pipx via system package manager
+            sudo apt update && sudo apt install -y pipx
+            # Ensure pipx is in PATH
+            export PATH="$HOME/.local/bin:$PATH"
+            echo "$HOME/.local/bin" >> $GITHUB_PATH
+          fi
           pipx install charmcraftcache
           echo CHARMCRAFT_CACHE_BIN=ccc >> $GITHUB_ENV
 
