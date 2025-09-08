@@ -20,23 +20,23 @@ jobs:
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - uses: actions/checkout@v5
-    
+
       - name: Setup LXD
         uses: canonical/setup-lxd@main
         with:
           channel: 5.21/stable
-    
+
       - name: Install charmcraft
         run: |
           sudo snap install charmcraft --classic
           echo CHARMCRAFT_BIN=charmcraft >> $GITHUB_ENV
-      
+
       - name: Install charmcraft cache
         if: ${{ inputs.use-charmcraft-cache }}
         run: |
-          pip install charmcraftcache
+          pipx install charmcraftcache
           echo CHARMCRAFT_CACHE_BIN=ccc >> $GITHUB_ENV
-    
+
       - name: Build charm under test
         run: ${{ env.CHARMCRAFT_BIN }} pack --verbose
 
