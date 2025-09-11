@@ -43,7 +43,7 @@ jobs:
             echo "$HOME/.local/bin" >> $GITHUB_PATH
           fi
           pipx install charmcraftcache
-          echo CHARMCRAFT_CACHE_BIN=ccc >> $GITHUB_ENV
+          echo CHARMCRAFT_BIN=ccc >> $GITHUB_ENV
 
       - name: Build charm under test
         run: ${{ env.CHARMCRAFT_BIN }} pack --verbose
