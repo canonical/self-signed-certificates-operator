@@ -64,6 +64,8 @@ jobs:
       - static-analysis
       - unit-tests-with-coverage
     uses: ./.github/workflows/build.yaml
+    with:
+      use-charmcraft-cache: true
     secrets: inherit
 
   integration-test:
