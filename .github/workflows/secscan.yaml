@@ -15,27 +15,27 @@ on:
         description: Key where the artifacts have been uploaded.
         required: true
         type: string
-      artifact-paths:
-        description: Paths where the artifact have been uploaded. String formatted as a JSON array
+      artifact-path:
+        description: filename of the charm to scan
         required: true
         type: string
 jobs:
   inputs-vetting:
     runs-on: ubuntu-latest
-    outputs:
-      paths: ${{ steps.parse.outputs.paths }}
-    steps:
-      - id: parse
-        run: |
-          # echo paths=$(echo ${{inputs.artifact-paths }} | jq -R -r '. | split(",")') >> $GITHUB_OUTPUT
-          paths=$(echo ${{inputs.artifact-paths }} | jq -R -r '. | fromjson')
-          echo "paths=$paths" >> $GITHUB_OUTPUT
-          echo $paths
+    # outputs:
+    #   paths: ${{ steps.parse.outputs.paths }}
+    # steps:
+    #   - id: parse
+    #     run: |
+    #       # echo paths=$(echo ${{inputs.artifact-paths }} | jq -R -r '. | split(",")') >> $GITHUB_OUTPUT
+    #       paths=$(echo ${{inputs.artifact-paths }} | jq -R -r '. | fromjson')
+    #       echo "paths=$paths" >> $GITHUB_OUTPUT
+    #       echo $paths
   secscan:
     needs: inputs-vetting
-    strategy:
-      matrix:
-        artifact: ${{ fromJson(needs.inputs-vetting.outputs.paths) }}
+    # strategy:
+    #   matrix:
+    #     artifact: ${{ fromJson(needs.inputs-vetting.outputs.paths) }}
     runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
     steps:
       - name: Install secscan cli
@@ -51,7 +51,7 @@ jobs:
         continue-on-error: true
         run: |
           echo secscan-result=${{ env.secscan-result }} >> $GITHUB_OUTPUT
-          secscan-client --batch submit --scanner trivy --type ${{ inputs.artifacts-type }} --format ${{ inputs.artifacts-format }} ${{ matrix.artifact }} --wait-and-print > ${{ env.secscan-result }}
+          secscan-client --batch submit --scanner trivy --type ${{ inputs.artifacts-type }} --format ${{ inputs.artifacts-format }} ${{ inputs.artifact-path }} --wait-and-print > ${{ env.secscan-result }}
         env:
           secscan-result: secscan.result
       - name: Create issue
