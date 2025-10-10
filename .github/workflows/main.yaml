@@ -85,3 +85,19 @@ jobs:
       track-name: 1
     secrets:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
+
+  # scan-amd64:
+  #   needs:
+  #     - build
+  #   # if: ${{ github.ref_name == 'main' }}
+  #   uses: ./.github/workflows/secscan.yaml
+  #   with:
+  #     artifacts-key: built-charm-amd64
+
+  # scan-arm64:
+  #   needs:
+  #     - build
+  #   # if: ${{ github.ref_name == 'main' }}
+  #   uses: ./.github/workflows/secscan.yaml
+  #   with:
+  #     artifacts-key: built-charm-arm64

@@ -25,7 +25,7 @@ jobs:
 
       - name: Get Charm Under Test Path
         id: charm-path
-        run: echo "charm_path=$(find built/ -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
+        run: echo "charm-path=$(find built/ -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
 
       # Configuring manually instead of using the charmed-kubernetes/actions-operator@main
       # so we can run sudo microk8s config | juju add-k8s my-k8s --client before bootstrap
@@ -63,7 +63,7 @@ jobs:
       - name: Run integration tests
         run: |
           tox -e integration -- \
-            --charm_path=${{ steps.charm-path.outputs.charm_path }}
+            --charm_path=${{ steps.charm-path.outputs.charm-path }}
 
       - name: Archive charmcraft logs
         if: failure()
