@@ -7,6 +7,13 @@ on:
         required: false
         default: false
         type: boolean
+    outputs:
+      charm-path-amd64:
+        description: Path to the built amd64 charm
+        value: ${{ jobs.build-charm-under-test.outputs.charm-path-amd64 }}
+      charm-path-arm64:
+        description: Path to the built arm64 charm
+        value: ${{ jobs.build-charm-under-test.outputs.charm-path-arm64 }}
 
 jobs:
   build-charm-under-test:
@@ -18,6 +25,9 @@ jobs:
           - arch: arm64
             runner: [self-hosted, linux, ARM64, medium, noble]
     runs-on: ${{ matrix.arch.runner }}
+    outputs:
+      charm-path-amd64: ${{ steps.charm-path.outputs.charm_path_amd64 }}
+      charm-path-arm64: ${{ steps.charm-path.outputs.charm_path_arm64 }}
     steps:
       - uses: actions/checkout@v5
 
@@ -54,3 +64,7 @@ jobs:
           name: built-charm-${{ matrix.arch.arch }}
           path: "*.charm"
           retention-days: 5
+
+      - name: Get Charm Under Test Path
+        id: charm-path
+        run: echo "charm_path_${{ matrix.arch.arch }}=$(find . -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
