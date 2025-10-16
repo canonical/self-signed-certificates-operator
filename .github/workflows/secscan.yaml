@@ -1,0 +1,55 @@
+name: secscan
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: The channel to scan (edge, beta, candidate, stable).
+        required: true
+        type: string
+      arch:
+        description: The architecture to scan (amd64, arm64).
+        required: true
+        type: string
+      create-issue:
+        description: Whether to create an issue if secscan finds a problem.
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      secscan-return-code:
+        description: The result of the secscan job
+        value: ${{ jobs.secscan.outputs.secscan-return-code }}
+
+env:
+  SECSCAN_RESULTS: secscan-result.txt
+  CHARM_CHANNEL: 1/${{ inputs.channel }}
+  JUJU_CHANNEL: 3.6/stable
+
+
+jobs:
+  secscan:
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
+    outputs:
+      secscan-return-code: ${{ steps.secscan.outputs.secscan-return-code }}
+    steps:
+      - name: Install dependencies and download charm
+        run: |
+          sudo snap install canonical-secscan-client
+          sudo snap connect canonical-secscan-client:home system:home
+          sudo snap install juju --channel=${{ env.JUJU_CHANNEL }}
+          echo "Downloading charm from channel ${{ env.CHARM_CHANNEL }}"
+          juju download self-signed-certificates --arch=${{ inputs.arch }} --channel=${{ env.CHARM_CHANNEL }} --filepath=self-signed-certificates.charm
+      - name: Run secscan
+        id: secscan
+        run: |
+          set +e
+          secscan-client --batch submit --scanner trivy --type package --format charm self-signed-certificates.charm --wait-and-print | tee $SECSCAN_RESULTS
+          echo "secscan-return-code=$?" >> $GITHUB_OUTPUT
+          set -e
+      - name: Create issue
+        if: steps.secscan.outputs.secscan-return-code != '0' && inputs.create-issue
+        run: |
+          echo "please check job ${{ github.run_id}}" >> $SECSCAN_RESULTS
+          gh issue create -R ${{ github.repository }} --label bug --title "Release compromised by CVE" -F $SECSCAN_RESULTS
+        env:
+          GH_TOKEN: ${{ github.token }}
