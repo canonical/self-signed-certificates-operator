@@ -21,12 +21,15 @@ env:
   PROMOTE_FROM: ${{ inputs.promotion == 'edge -> beta' && 'edge' || inputs.promotion == 'beta -> candidate' && 'beta' || inputs.promotion == 'candidate -> stable' && 'candidate' || '' }}
   PROMOTE_TO:   ${{ inputs.promotion == 'edge -> beta' && 'beta' || inputs.promotion == 'beta -> candidate' && 'candidate' || inputs.promotion == 'candidate -> stable' && 'stable' || '' }}
   PROMOTE_ARCH: ${{ inputs.arch }}
+  TRACK: "1" # This also needs to be updated in the scan job below
 
 jobs:
   scan:
     name: Secscan
-    uses: ./.github/workflows/secscan.yaml
+    uses: canonical/identity-credentials-workflows/.github/workflows/secscan-charm.yaml@v0
     with:
+      charm: self-signed-certificates
+      track: "1"
       # We have to compute the channel here again because we can't pass env variables to a reusable workflow
       channel: ${{ inputs.promotion == 'edge -> beta' && 'edge' || inputs.promotion == 'beta -> candidate' && 'beta' || inputs.promotion == 'candidate -> stable' && 'candidate' || '' }}
       arch: ${{ inputs.arch }}
@@ -36,7 +39,6 @@ jobs:
     name: Promote Charm
     needs:
       - scan
-    if: ${{ (inputs.promotion != 'candidate -> stable') || needs.scan.outputs.secscan-return-code == '0' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -45,8 +47,8 @@ jobs:
         with:
           credentials: ${{ secrets.CHARMCRAFT_AUTH }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          destination-channel: 1/${{ env.PROMOTE_TO }}
-          origin-channel: 1/${{ env.PROMOTE_FROM }}
+          destination-channel: ${{ env.TRACK }}/${{ env.PROMOTE_TO }}
+          origin-channel: ${{ env.TRACK }}/${{ env.PROMOTE_FROM }}
           charmcraft-channel: latest/stable
           base-channel: "24.04"
           base-architecture: ${{ env.PROMOTE_ARCH }}
