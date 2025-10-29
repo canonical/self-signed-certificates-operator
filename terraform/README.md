@@ -9,7 +9,7 @@ The base module is not intended to be deployed in separation (it is possible tho
 ## Module structure
 
 - **main.tf** - Defines the Juju application to be deployed.
-- **variables.tf** - Allows customization of the deployment. Except for exposing the deployment options (Juju model name, channel or application name) also models the charm configuration.
+- **variables.tf** - Allows customization of the deployment. Except for exposing the deployment options (Juju model UUID, channel or application name) also models the charm configuration.
 - **output.tf** - Responsible for integrating the module with other Terraform modules, primarily by defining potential integration endpoints (charm integrations), but also by exposing the application name.
 - **versions.tf** - Defines the Terraform provider.
 
@@ -22,15 +22,15 @@ The following tools needs to be installed and should be running in the environme
 - Juju controller bootstrapped onto the K8s cluster
 - Terraform
 
-## Using Grafana-agent-k8s base module in higher level modules
+## Using Self-signed-certificates-k8s root module in higher level modules
 
-If you want to use `self-signed-certificates` base module as part of your Terraform module, import it like shown below.
+If you want to use `self-signed-certificates` root module as part of your Terraform module, import it like shown below.
 
 ```text
 module "self-signed-certificates" {
   source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform"
   
-  model = "juju_model_name"
+  model_uuid = "juju_model_uuid"
   (Customize configuration variables here if needed)
 }
 ```
@@ -39,7 +39,7 @@ Create the integrations, for instance:
 
 ```text
 resource "juju_integration" "certificates-endpoint-integration" {
-  model = var.model
+  model_uuid = var.model_uuid
 
   application {
     name     = module.some-app.app_name
