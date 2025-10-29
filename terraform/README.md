@@ -24,18 +24,20 @@ The following tools needs to be installed and should be running in the environme
 
 ## Using Self-signed-certificates-k8s root module in higher level modules
 
-If you want to use `self-signed-certificates` root module as part of your Terraform module, import it like shown below.
+If you want to use `self-signed-certificates` root module as part of your Terraform module, import it like shown below. We recommend pinning to a specific git tag or commit SHA for stability.
 
 ```text
 module "self-signed-certificates" {
-  source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform"
+  source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform?ref=<COMMIT_HASH>"
   
-  model_uuid = "juju_model_uuid"
+  model_uuid = "juju_model.my-model.uuid"
   (Customize configuration variables here if needed)
 }
 ```
 
-Create the integrations, for instance:
+The model UUID can easily be obtained with the [juju_model data source](https://registry.terraform.io/providers/juju/juju/latest/docs/data-sources/model). 
+
+Then, create the integrations, for instance:
 
 ```text
 resource "juju_integration" "certificates-endpoint-integration" {
