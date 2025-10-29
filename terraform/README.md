@@ -1,10 +1,10 @@
 # Self Signed Certificates Terraform module
 
-This folder contains a base [Terraform][Terraform] module for the `self-signed-certificats` charm.
+This folder contains a root [Terraform][Terraform] module for the `self-signed-certificats` charm.
 
 The module uses the [Terraform Juju provider][Terraform Juju provider] to model the charm deployment onto any Kubernetes environment managed by [Juju][Juju].
 
-The base module is not intended to be deployed in separation (it is possible though), but should rather serve as a building block for higher level modules.
+The root module is not intended to be deployed in separation (it is possible though), but should rather serve as a building block for higher level modules.
 
 ## Module structure
 
