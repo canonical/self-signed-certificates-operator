@@ -30,7 +30,7 @@ If you want to use `self-signed-certificates` root module as part of your Terraf
 module "self-signed-certificates" {
   source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform?ref=<COMMIT_HASH>"
   
-  model_uuid = "juju_model.my-model.uuid"
+  model_uuid = data.juju_model.my-model.uuid
   (Customize configuration variables here if needed)
 }
 ```
