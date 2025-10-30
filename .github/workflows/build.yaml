@@ -49,7 +49,7 @@ jobs:
         run: ${{ env.CHARMCRAFT_BIN }} pack --verbose
 
       - name: Archive Charm Under Test
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: built-charm-${{ matrix.arch.arch }}
           path: "*.charm"
