@@ -1,58 +1,63 @@
 name: Publish charm
 
 on:
-    workflow_call:
-        inputs:
-            track-name:
-                description: Name of the charmhub track to publish the charm to
-                type: string
-                required: true
-        secrets:
-            CHARMCRAFT_AUTH:
-                required: true
+  workflow_call:
+    inputs:
+      track-name:
+        description: Name of the charmhub track to publish the charm to
+        type: string
+        required: true
+    secrets:
+      CHARMCRAFT_AUTH:
+        required: true
 
 jobs:
-    publish-charm:
-        strategy:
-            matrix:
-                arch:
-                    - arch: amd64
-                      runner: ubuntu-24.04
-                    - arch: arm64
-                      runner: [self-hosted, linux, ARM64, medium, jammy]
-                base:
-                    - "24.04"
-                    - "22.04"
-        runs-on: ${{ matrix.arch.runner }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v5
+  publish-charm:
+    strategy:
+      matrix:
+        arch:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: [self-hosted, linux, ARM64, medium, jammy]
+        base:
+          - "24.04"
+          - "22.04"
+    runs-on: ${{ matrix.arch.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
-            - name: Install charmcraft
-              run: sudo snap install charmcraft --classic
+      - name: Install charmcraft
+        run: sudo snap install charmcraft --classic
 
-            - name: Fetch Tested Charm
-              uses: actions/download-artifact@v5
-              with:
-                  name: built-charm-${{ matrix.arch.arch }}
+      - name: Fetch Tested Charm
+        uses: actions/download-artifact@v5
+        with:
+          name: built-charm-${{ matrix.arch.arch }}-${{ matrix.base }}
 
-            - name: Get Charm Under Test Path
-              id: charm-path
-              run: echo "charm_path=$(find . -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
+      - name: Get Charm Under Test Path
+        id: charm-path
+        run: |
+          {
+            echo "charm_path<<EOF"
+            find built/ -name '*.charm' -type f -print -quit
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-            - name: Upload charm to Charmhub
-              uses: canonical/charming-actions/upload-charm@2.7.0
-              with:
-                  built-charm-path: ${{ steps.charm-path.outputs.charm_path }}
-                  credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
-                  github-token: "${{ secrets.GITHUB_TOKEN }}"
-                  channel: ${{ inputs.track-name }}/edge
-                  base-channel: ${{ matrix.base }}
-                  base-architecture: ${{ matrix.arch.arch }}
+      - name: Upload charm to Charmhub
+        uses: canonical/charming-actions/upload-charm@2.7.0
+        with:
+          built-charm-path: ${{ steps.charm-path.outputs.charm_path }}
+          credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          channel: ${{ inputs.track-name }}/edge
+          base-channel: ${{ matrix.base }}
+          base-architecture: ${{ matrix.arch.arch }}
 
-            - name: Archive charmcraft logs
-              if: failure()
-              uses: actions/upload-artifact@v5
-              with:
-                  name: charmcraft-logs
-                  path: /home/runner/.local/state/charmcraft/log/*.log
+      - name: Archive charmcraft logs
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: charmcraft-logs
+          path: /home/runner/.local/state/charmcraft/log/*.log
