@@ -16,11 +16,18 @@ on:
         options:
           - amd64
           - arm64
+      base-channel:
+        type: choice
+        description: Ubuntu base channel to promote for
+        options:
+          - "24.04"
+          - "22.04"
 
 env:
   PROMOTE_FROM: ${{ inputs.promotion == 'edge -> beta' && 'edge' || inputs.promotion == 'beta -> candidate' && 'beta' || inputs.promotion == 'candidate -> stable' && 'candidate' || '' }}
-  PROMOTE_TO:   ${{ inputs.promotion == 'edge -> beta' && 'beta' || inputs.promotion == 'beta -> candidate' && 'candidate' || inputs.promotion == 'candidate -> stable' && 'stable' || '' }}
+  PROMOTE_TO: ${{ inputs.promotion == 'edge -> beta' && 'beta' || inputs.promotion == 'beta -> candidate' && 'candidate' || inputs.promotion == 'candidate -> stable' && 'stable' || '' }}
   PROMOTE_ARCH: ${{ inputs.arch }}
+  BASE_CHANNEL: ${{ inputs['base-channel'] }}
   TRACK: "1" # This also needs to be updated in the scan job below
 
 jobs:
@@ -50,5 +57,5 @@ jobs:
           destination-channel: ${{ env.TRACK }}/${{ env.PROMOTE_TO }}
           origin-channel: ${{ env.TRACK }}/${{ env.PROMOTE_FROM }}
           charmcraft-channel: latest/stable
-          base-channel: "24.04"
+          base-channel: ${{ env.BASE_CHANNEL }}
           base-architecture: ${{ env.PROMOTE_ARCH }}

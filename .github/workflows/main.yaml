@@ -80,7 +80,7 @@ jobs:
       - unit-tests-with-coverage
       - integration-test
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm-multiarch.yaml@v0
+    uses: ./.github/workflows/publish-charm.yaml
     with:
       track-name: 1
     secrets:
