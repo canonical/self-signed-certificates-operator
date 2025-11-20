@@ -31,6 +31,8 @@ type: charm
 platforms:
   ubuntu@24.04:amd64:
   ubuntu@24.04:arm64:
+  ubuntu@22.04:amd64:
+  ubuntu@22.04:arm64:
   ubuntu@24.04:s390x:
 
 parts:
@@ -127,7 +129,7 @@ config:
     certificate-validity:
       type: string
       default: 90d
-      description: > 
+      description: >
         Signed certificate validity.
         The given value must be followed by one of: "m" for minutes, "h" for hours, "d" for days and "w" for weeks. 
         For example, "1m" for 1 minute, "10w" for 10 weeks.

@@ -65,7 +65,7 @@ jobs:
       - unit-tests-with-coverage
     uses: ./.github/workflows/build.yaml
     with:
-      use-charmcraft-cache: true
+      use-charmcraft-cache: false
     secrets: inherit
 
   integration-test:
