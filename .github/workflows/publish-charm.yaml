@@ -26,13 +26,13 @@ jobs:
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install charmcraft
         run: sudo snap install charmcraft --classic
 
       - name: Fetch Tested Charm
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: built-charm-${{ matrix.arch.arch }}-${{ matrix.base }}
 
