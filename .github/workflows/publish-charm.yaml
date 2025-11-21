@@ -35,6 +35,7 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           name: built-charm-${{ matrix.arch.arch }}-${{ matrix.base }}
+          path: built/
 
       - name: Get Charm Under Test Path
         id: charm-path
