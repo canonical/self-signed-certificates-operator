@@ -10,8 +10,17 @@ jobs:
         arch:
           - arch: amd64
             runner: ubuntu-24.04
+            base: "24.04"
+          - arch: amd64
+            runner: ubuntu-22.04
+            base: "22.04"
           - arch: arm64
             runner: [self-hosted, linux, ARM64, medium, noble]
+            base: "24.04"
+          - arch: arm64
+            runner: [self-hosted, linux, ARM64, medium, jammy]
+            base: "22.04"
+
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - name: Checkout
@@ -20,12 +29,17 @@ jobs:
       - name: Fetch Charm Under Test
         uses: actions/download-artifact@v6
         with:
-          name: built-charm-${{ matrix.arch.arch }}
+          name: built-charm-${{ matrix.arch.arch }}-${{ matrix.arch.base }}
           path: built/
 
       - name: Get Charm Under Test Path
         id: charm-path
-        run: echo "charm_path=$(find built/ -name '*.charm' -type f -print)" >> $GITHUB_OUTPUT
+        run: |
+          {
+            echo "charm_path<<EOF"
+            find built/ -name '*.charm' -type f -print -quit
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       # Configuring manually instead of using the charmed-kubernetes/actions-operator@main
       # so we can run sudo microk8s config | juju add-k8s my-k8s --client before bootstrap
