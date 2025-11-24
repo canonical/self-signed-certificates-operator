@@ -53,8 +53,6 @@ jobs:
           credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           channel: ${{ inputs.track-name }}/edge
-          base-channel: ${{ matrix.base }}
-          base-architecture: ${{ matrix.arch.arch }}
 
       - name: Archive charmcraft logs
         if: failure()
