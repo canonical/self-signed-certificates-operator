@@ -1,0 +1,71 @@
+name: Build
+
+on:
+    workflow_call:
+        inputs:
+            charmcraft-channel:
+                description: Snap channel for charmcraft
+                required: false
+                default: latest/stable
+                type: string
+        outputs:
+            name:
+                description: The charm name
+                value: ${{ jobs.build-charm-under-test.outputs.name }}
+            platforms:
+                description: The platforms for which the charm has been built
+                value: ${{ jobs.build-charm-under-test.outputs.platforms }}
+            charm_paths:
+                description: The paths to all the charms built
+                value: ${{ jobs.build-charm-under-test.outputs.charm_paths }}
+            artifacts_key:
+                description: Key used to upload all the charm artifacts
+                value: ${{ jobs.build-charm-under-test.outputs.artifacts }}
+
+jobs:
+    build-charm-under-test:
+        runs-on: ubuntu-24.04
+        outputs:
+            name: ${{ steps.get-charm-info.outputs.charm-name }}
+            platforms: ${{ steps.get-charm-info.outputs.charm-platforms }}
+            charm_paths: ${{ steps.get-charm-paths.outputs.charm_paths }}
+            artifacts: ${{ steps.artifact-name.outputs.artifact }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+
+            - name: Setup LXD
+              uses: canonical/setup-lxd@main
+              with:
+                  channel: 5.21/stable
+
+            - name: Install charmcraft
+              run: sudo snap install charmcraft --classic --channel ${{ inputs.charmcraft-channel }}
+
+            - name: Build charm under test
+              run: charmcraft pack -v
+
+            - name: Get charm info
+              id: get-charm-info
+              run: |
+                  echo charm-name=$(yq -r '.name' charmcraft.yaml) >> $GITHUB_OUTPUT
+                  echo charm-platforms=$(yq -r '.bases // .platforms | keys | tojson' charmcraft.yaml) >> $GITHUB_OUTPUT
+
+            - name: Get charm paths
+              id: get-charm-paths
+              run: |
+                  echo charm_paths=$(echo '${{ steps.get-charm-info.outputs.charm-platforms }}' | jq -r --arg charm '${{ steps.get-charm-info.outputs.charm-name }}' '.[] |= split(":") | .[] |= join("-") | map($charm + "_" + . + ".charm") | join(",")') >> $GITHUB_OUTPUT
+
+            - name: Generate artifact name
+              id: artifact-name
+              run: echo artifact='${{ github.sha }}-${{ github.job }}' >> $GITHUB_OUTPUT
+
+            - name: Upload charm artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ steps.artifact-name.outputs.artifact }}
+                  path: ${{ github.workspace }}/*.charm
+                  if-no-files-found: error
+                  retention-days: 5

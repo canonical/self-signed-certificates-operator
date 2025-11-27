@@ -67,12 +67,14 @@ jobs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm.yaml@v0
+    uses: ./.github/workflows/build-charm.yaml
 
   integration-test:
     needs:
       - build
     uses: ./.github/workflows/integration-test.yaml
+    with:
+      artifacts_key: ${{ needs.build.outputs.artifacts_key }}
 
   publish-charm:
     needs:
@@ -80,11 +82,12 @@ jobs:
       - static-analysis
       - unit-tests-with-coverage
       - integration-test
+      - build
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v0
+    uses: ./.github/workflows/publish-charm.yaml
     with:
-      path: built/
-      track-name: 1
-      artifact-name: built-charm-amd64
+      destination_channel: 1/edge
+      artifacts_key: ${{ needs.build.outputs.artifacts_key }}
+      charm_paths: ${{ needs.build.outputs.charm_paths }}
     secrets:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}

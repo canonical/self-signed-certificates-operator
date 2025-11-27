@@ -1,0 +1,77 @@
+# Copyright 2024 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+name: publish-charm
+
+on:
+    workflow_call:
+        inputs:
+            destination_channel:
+                description: CharmHub channel to publish to
+                required: true
+                type: string
+            branch_name:
+                description: An additional branch name to append to the channel
+                required: false
+                default: ""
+                type: string
+            artifacts_key:
+                description: Key used to download the charm artifacts
+                required: true
+                type: string
+            charm_paths:
+                description: Comma-separated list of exact charm file paths
+                required: true
+                type: string
+        outputs:
+            channel:
+                description: "The release channel"
+                value: ${{ jobs.publish-charm.outputs.channel }}
+        secrets:
+            CHARMCRAFT_AUTH:
+                required: true
+
+jobs:
+    publish-charm:
+        name: Publish Charm
+        runs-on: ubuntu-24.04
+        outputs:
+            channel: ${{ steps.publish-channel.outputs.channel }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+
+            - name: Determine publish channel
+              id: publish-channel
+              run: |
+                  channel="${{ inputs.destination_channel }}"
+                  branch="${{ inputs.branch_name }}"
+                  if [ -n "$branch" ]; then
+                    sanitized=$(echo "$branch" | sed 's#[/_.]#-#g')
+                    channel="$channel/$sanitized"
+                  fi
+                  echo "channel=$channel" >> $GITHUB_OUTPUT
+
+            - name: Download charm artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: ${{ inputs.artifacts_key }}
+
+            - name: Upload charm to Charmhub
+              uses: canonical/charming-actions/upload-charm@2.7.0
+              with:
+                  credentials: ${{ secrets.CHARMCRAFT_AUTH }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  channel: ${{ steps.publish-channel.outputs.channel }}
+                  destructive-mode: false
+                  built-charm-path: ${{ inputs.charm_paths }}
+                  github-tag: false
+
+            - name: Archive charmcraft logs
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: charmcraft-logs
+                  path: /home/runner/.local/state/charmcraft/log/*.log
