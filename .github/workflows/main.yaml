@@ -67,7 +67,14 @@ jobs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm.yaml@v1-fix-artifact-name
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-amd.yaml@v1-fix-artifact-name
+
+  build-arm:
+    needs:
+      - lint-report
+      - static-analysis
+      - unit-tests-with-coverage
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-arm.yaml@v1-fix-artifact-name
 
   integration-test:
     needs:
@@ -77,17 +84,34 @@ jobs:
       artifacts-key: ${{ needs.build.outputs['artifacts-key'] }}
       charm-paths: ${{ needs.build.outputs['charm-paths'] }}
 
-  publish-charm:
+  publish-charm-amd64:
     needs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
       - integration-test
+      - build
     if: ${{ github.ref_name == 'main' }}
     uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1-fix-artifact-name
     with:
       destination_channel: "1/edge"
       artifacts-key: ${{ needs.build.outputs['artifacts-key'] }}
       charm-paths: ${{ needs.build.outputs['charm-paths'] }}
+    secrets:
+      CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
+
+  publish-charm-arm64:
+    needs:
+      - lint-report
+      - static-analysis
+      - unit-tests-with-coverage
+      - integration-test
+      - build-arm
+    if: ${{ github.ref_name == 'main' }}
+    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1-fix-artifact-name
+    with:
+      destination_channel: "1/edge"
+      artifacts-key: ${{ needs['build-arm'].outputs['artifacts-key'] }}
+      charm-paths: ${{ needs['build-arm'].outputs['charm-paths'] }}
     secrets:
       CHARMCRAFT_AUTH: ${{ secrets.CHARMCRAFT_AUTH }}
