@@ -6,9 +6,9 @@ requires-python = ">=3.10"
 dependencies = [
     "cryptography",
     "jsonschema",
-    "ops >=3.3.1",
+    "ops >=3.4.0",
     "opentelemetry-exporter-otlp-proto-http",
-    "pydantic==2.12.4",
+    "pydantic==2.12.5",
 ]
 
 [dependency-groups]
