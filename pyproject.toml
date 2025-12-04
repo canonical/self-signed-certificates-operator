@@ -4,7 +4,6 @@ version = "0.1.0"
 requires-python = ">=3.10"
 
 dependencies = [
-    "cryptography",
     "jsonschema",
     "ops >=3.3.1",
     "opentelemetry-exporter-otlp-proto-http",
@@ -14,6 +13,7 @@ dependencies = [
 
 [dependency-groups]
 test = [
+    "cryptography",
     "coverage[toml]",
     "juju",
     "pytest",
