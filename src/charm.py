@@ -9,7 +9,7 @@ import typing
 from datetime import datetime, timedelta
 from typing import Any, Iterator, Optional, cast
 
-from charmlibs.interfaces import (
+from charmlibs.interfaces.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
     PrivateKey,
