@@ -1715,7 +1715,6 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "charmlibs-interfaces-tls-certificates" },
-    { name = "cryptography" },
     { name = "jsonschema" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "ops" },
@@ -1730,6 +1729,7 @@ dev = [
 ]
 test = [
     { name = "coverage", extra = ["toml"] },
+    { name = "cryptography" },
     { name = "juju" },
     { name = "ops", extra = ["testing"] },
     { name = "pytest" },
@@ -1740,7 +1740,6 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "charmlibs-interfaces-tls-certificates", specifier = "~=1.0" },
-    { name = "cryptography" },
     { name = "jsonschema" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "ops", specifier = ">=3.3.1" },
@@ -1755,6 +1754,7 @@ dev = [
 ]
 test = [
     { name = "coverage", extras = ["toml"] },
+    { name = "cryptography" },
     { name = "juju" },
     { name = "ops", extras = ["testing"] },
     { name = "pytest" },

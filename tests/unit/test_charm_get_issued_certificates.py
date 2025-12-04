@@ -16,8 +16,7 @@ from charmlibs.interfaces.tls_certificates import (
 )
 
 from charm import SelfSignedCertificatesCharm
-
-TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
+from constants import TLS_LIB_PATH
 
 
 class TestCharmGetIssuedCertificates:
