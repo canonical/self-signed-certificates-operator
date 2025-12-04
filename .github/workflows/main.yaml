@@ -67,14 +67,14 @@ jobs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-amd.yaml@v1-fix-artifact-name
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-amd.yaml@use-self-hosted-runners
 
   build-arm:
     needs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-arm.yaml@v1-fix-artifact-name
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-arm.yaml@use-self-hosted-runners
 
   integration-test:
     needs:
@@ -92,7 +92,7 @@ jobs:
       - integration-test
       - build
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1-fix-artifact-name
+    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@use-self-hosted-runners
     with:
       destination_channel: "1/edge"
       artifacts-key: ${{ needs.build.outputs['artifacts-key'] }}
@@ -108,7 +108,7 @@ jobs:
       - integration-test
       - build-arm
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1-fix-artifact-name
+    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@use-self-hosted-runners
     with:
       destination_channel: "1/edge"
       artifacts-key: ${{ needs['build-arm'].outputs['artifacts-key'] }}
