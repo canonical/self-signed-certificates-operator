@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, mock_open, patch
 
 import pytest
 import scenario
-from charmlibs.interfaces import (
+from charmlibs.interfaces.tls_certificates import (
     ProviderCertificate,
     RequirerCertificateRequest,
     generate_ca,
