@@ -33,7 +33,7 @@ env:
 jobs:
   scan:
     name: Secscan
-    uses: canonical/identity-credentials-workflows/.github/workflows/secscan-charm.yaml@v0
+    uses: canonical/identity-credentials-workflows/.github/workflows/secscan-charm.yaml@v1.1.0
     with:
       charm: self-signed-certificates
       track: "1"
