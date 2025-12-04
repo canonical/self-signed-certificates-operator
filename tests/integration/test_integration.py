@@ -59,7 +59,6 @@ async def wait_for_requirer_certificates(ops_test: OpsTest, ca_common_name: str)
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.abort_on_fail
 async def deploy(ops_test: OpsTest, request: pytest.FixtureRequest) -> None:
     """Build the charm-under-test and deploy it."""
     assert ops_test.model
