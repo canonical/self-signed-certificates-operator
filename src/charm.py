@@ -14,7 +14,7 @@ from charms.certificate_transfer_interface.v1.certificate_transfer import (
 )
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
-from charms.tls_certificates_interface.v4.tls_certificates import (
+from charmlibs.interfaces import (
     Certificate,
     CertificateSigningRequest,
     PrivateKey,
