@@ -9,11 +9,6 @@ import typing
 from datetime import datetime, timedelta
 from typing import Any, Iterator, Optional, cast
 
-from charms.certificate_transfer_interface.v1.certificate_transfer import (
-    CertificateTransferProvides,
-)
-from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
-from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
 from charmlibs.interfaces import (
     Certificate,
     CertificateSigningRequest,
@@ -25,6 +20,11 @@ from charmlibs.interfaces import (
     generate_certificate,
     generate_private_key,
 )
+from charms.certificate_transfer_interface.v1.certificate_transfer import (
+    CertificateTransferProvides,
+)
+from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
+from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
 from ops import main
 from ops.charm import ActionEvent, CharmBase, CollectStatusEvent
 from ops.framework import EventBase
