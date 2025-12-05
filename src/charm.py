@@ -372,13 +372,8 @@ class SelfSignedCertificatesCharm(CharmBase):
         try:
             secret = self.model.get_secret(label=label)
             date_time_expire = datetime.now() + expire
-            # TODO, Workaround for https://github.com/canonical/operator/issues/1288
-            secret._backend.secret_set(
-                typing.cast(str, secret.get_info().id),
-                content=content,
-                expire=date_time_expire,
-                label=label,
-            )
+            secret.set_info(expire=date_time_expire)
+            secret.set_content(content)
         except SecretNotFoundError:
             self.app.add_secret(content=content, label=label, expire=expire)
 
