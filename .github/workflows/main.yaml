@@ -92,7 +92,7 @@ jobs:
       - integration-test
       - build
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1.2.0
     with:
       destination_channel: 1/edge
       artifacts-key: ${{ needs.build.outputs.artifacts-key }}
@@ -108,7 +108,7 @@ jobs:
       - integration-test
       - build-arm
     if: ${{ github.ref_name == 'main' }}
-    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/publish-charm.yaml@v1.2.0
     with:
       destination_channel: 1/edge
       artifacts-key: ${{ needs.build-arm.outputs.artifacts-key }}
