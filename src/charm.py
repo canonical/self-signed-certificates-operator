@@ -2,7 +2,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Self Signed X.509 Certificates."""
+"""Self Signed X.509 Certificates Operator."""
 
 import logging
 import typing
