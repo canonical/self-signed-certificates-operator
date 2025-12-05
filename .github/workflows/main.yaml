@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   lint-report:
-    uses: canonical/identity-credentials-workflows/.github/workflows/lint-report.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/lint-report.yaml@v1.2.0
 
   static-analysis:
     runs-on: ubuntu-latest
@@ -67,14 +67,14 @@ jobs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-amd.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-amd.yaml@v1.2.0
 
   build-arm:
     needs:
       - lint-report
       - static-analysis
       - unit-tests-with-coverage
-    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-arm.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/build-charm-arm.yaml@v1.2.0
 
   integration-test:
     needs:

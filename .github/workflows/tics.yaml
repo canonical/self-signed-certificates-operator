@@ -7,7 +7,7 @@ on:
 
 jobs:
   analyze:
-    uses: canonical/identity-credentials-workflows/.github/workflows/tics-tox.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/tics-tox.yaml@v1.2.0
     with:
       project: self-signed-certificates-operator
       fetch_libs: true
