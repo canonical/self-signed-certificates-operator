@@ -5,7 +5,6 @@
 """Self Signed X.509 Certificates Operator."""
 
 import logging
-import typing
 from datetime import datetime, timedelta
 from typing import Any, Iterator, Optional, cast
 
