@@ -16,6 +16,7 @@ jobs:
   integration-test:
     strategy:
       matrix:
+        juju-version: ["3.6/stable", "4.0/stable"]
         arch:
           - arch: amd64
             runner: ubuntu-24.04
@@ -60,7 +61,7 @@ jobs:
 
       - name: Install Juju
         run: |
-          sudo snap install juju --channel=3.6/stable
+          sudo snap install juju --channel=${{ matrix.juju-version }}
 
       - name: Install and setup Microk8s
         run: |
