@@ -33,7 +33,7 @@ env:
 jobs:
   scan:
     name: Secscan
-    uses: canonical/identity-credentials-workflows/.github/workflows/secscan-charm.yaml@v1.1.0
+    uses: canonical/identity-credentials-workflows/.github/workflows/secscan-charm.yaml@v1.2.0
     with:
       charm: self-signed-certificates
       track: "1"
@@ -49,6 +49,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Promote Charm
         uses: canonical/charming-actions/release-charm@2.7.0
         with:
