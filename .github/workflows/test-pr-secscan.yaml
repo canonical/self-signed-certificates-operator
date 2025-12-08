@@ -1,0 +1,101 @@
+name: Test PR Secscan with SSH
+# Trigger workflow run
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+env:
+  SECSCAN_RESULTS: secscan-result.txt
+  CHARM_CHANNEL: latest/edge
+  JUJU_CHANNEL: 3.6/stable
+
+jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check if PR is from test branch
+        id: check
+        run: |
+          if [[ "${{ github.head_ref }}" == "test" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+  secscan:
+    needs: check-branch
+    if: needs.check-branch.outputs.should-run == 'true'
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
+    outputs:
+      secscan-return-code: ${{ steps.secscan.outputs.secscan-return-code }}
+    steps:
+      - name: Install dependencies and download charm
+        run: |
+          sudo snap install canonical-secscan-client || echo "canonical-secscan-client already installed"
+          sudo snap connect canonical-secscan-client:home system:home || echo "canonical-secscan-client:home already connected"
+          sudo snap install juju --channel=${{ env.JUJU_CHANNEL }} || echo "juju already installed"
+          sudo apt-get update
+          sudo apt-get install -y tmux
+          echo "Downloading charm from channel ${{ env.CHARM_CHANNEL }}"
+          juju download self-signed-certificates --arch=amd64 --channel=${{ env.CHARM_CHANNEL }} --filepath=self-signed-certificates.charm
+
+      - name: Setup tmux session
+        run: |
+          # Create a tmux session for secscan
+          tmux new-session -d -s secscan
+          echo "Tmux session 'secscan' created and ready"
+
+      - name: Run secscan in tmux
+        id: secscan
+        continue-on-error: true
+        run: |
+          set +e
+          
+          # Run secscan in the tmux session
+          tmux send-keys -t secscan "secscan-client --batch submit --scanner trivy --type package --format charm self-signed-certificates.charm --wait-and-print | tee ${{ env.SECSCAN_RESULTS }}" C-m
+          
+          # Wait for the secscan command to complete
+          while tmux list-panes -t secscan -F '#{pane_current_command}' | grep -q -v bash; do
+            echo "Secscan still running..."
+            sleep 10
+          done
+          
+          # Give it a moment to finish writing
+          sleep 2
+          
+          # Check results
+          if [ -f "${{ env.SECSCAN_RESULTS }}" ]; then
+            cat "${{ env.SECSCAN_RESULTS }}"
+            exit_code=$?
+          else
+            echo "Error: Secscan results file not found"
+            exit_code=1
+          fi
+          
+          echo "secscan-return-code=$exit_code" >> $GITHUB_OUTPUT
+          exit $exit_code
+
+      - name: Setup SSH with tmate
+        if: always()
+        uses: canonical/action-tmate@main
+        with:
+          detached: true
+        timeout-minutes: 60
+
+      - name: Cleanup tmux session
+        if: always()
+        run: |
+          tmux kill-session -t secscan || echo "Tmux session already terminated"
+
+      - name: Upload secscan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secscan-results
+          path: ${{ env.SECSCAN_RESULTS }}
+          if-no-files-found: ignore
