@@ -5,10 +5,10 @@ requires-python = ">=3.10"
 
 dependencies = [
     "jsonschema",
-    "ops >=3.3.1",
+    "ops >=3.4.0",
     "opentelemetry-exporter-otlp-proto-http",
-    "pydantic==2.12.4",
-    "charmlibs-interfaces-tls-certificates~=1.0"
+    "pydantic==2.12.5",
+    "charmlibs-interfaces-tls-certificates~=1.2"
 ]
 
 [dependency-groups]
