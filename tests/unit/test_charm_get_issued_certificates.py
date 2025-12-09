@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import scenario
-from charms.tls_certificates_interface.v4.tls_certificates import (
+from charmlibs.interfaces.tls_certificates import (
     ProviderCertificate,
     generate_ca,
     generate_certificate,
@@ -16,8 +16,7 @@ from charms.tls_certificates_interface.v4.tls_certificates import (
 )
 
 from charm import SelfSignedCertificatesCharm
-
-TLS_LIB_PATH = "charms.tls_certificates_interface.v4.tls_certificates"
+from constants import TLS_LIB_PATH
 
 
 class TestCharmGetIssuedCertificates:
