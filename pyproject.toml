@@ -17,9 +17,8 @@ test = [
     "coverage[toml]",
     "juju",
     "pytest",
-    "pytest-operator",
-    "pytest-asyncio==0.21.2",
     "ops[testing]",
+    "jubilant>=1.6.1",
 ]
 dev = [
     "codespell",
@@ -80,4 +79,5 @@ skip = "build,lib,venv,icon.svg,.tox,.git,.mypy_cache,.ruff_cache,.coverage"
 
 [tool.pyright]
 include = ["src/**.py"]
+extraPaths = ["lib", "src", "."]
 reportMissingParameterType = true
