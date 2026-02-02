@@ -4,8 +4,9 @@
 
 """Self Signed X.509 Certificates Operator."""
 
+import hashlib
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Optional, cast
 
 from charmlibs.interfaces.tls_certificates import (
@@ -25,7 +26,7 @@ from charms.certificate_transfer_interface.v1.certificate_transfer import (
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
 from ops import main
-from ops.charm import ActionEvent, CharmBase, CollectStatusEvent
+from ops.charm import ActionEvent, CharmBase, CollectMetricsEvent, CollectStatusEvent
 from ops.framework import EventBase
 from ops.model import ActiveStatus, BlockedStatus, SecretNotFoundError
 
@@ -57,6 +58,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         )
 
         self.framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
+        self.framework.observe(self.on.collect_metrics, self._on_collect_metrics)
         configure_events = [
             self.on.update_status,
             self.on.config_changed,
@@ -89,6 +91,72 @@ class SelfSignedCertificatesCharm(CharmBase):
             )
             return
         event.add_status(ActiveStatus())
+
+    def _on_collect_metrics(self, event: CollectMetricsEvent) -> None:
+        """Handle the collect-metrics event.
+
+        Emits metrics about issued and active certificates and their expiry times.
+        """
+        if not self.unit.is_leader():
+            return
+
+        # Get all issued certificates (both active and revoked)
+        issued_certificates = self.tls_certificates.get_issued_certificates()
+        
+        # Metric A: Total count of certificates ever issued
+        total_issued = len(issued_certificates)
+        event.add_metrics({"issued_certificates": total_issued})
+
+        # Get active (non-revoked) certificates
+        active_certificates = [cert for cert in issued_certificates if not cert.revoked]
+        
+        # Metric B: Current count of active certificates
+        active_count = len(active_certificates)
+        event.add_metrics({"number_of_active_certs": active_count})
+
+        # Metric C: Time to expiry for each active certificate
+        now_utc = datetime.now(timezone.utc)
+        for provider_cert in active_certificates:
+            cert = provider_cert.certificate
+            if cert.expiry_time:
+                # Calculate time to expiry in seconds
+                expiry_time = cert.expiry_time
+                # Ensure expiry_time is timezone-aware
+                if expiry_time.tzinfo is None:
+                    expiry_time = expiry_time.replace(tzinfo=timezone.utc)
+                
+                time_to_expire = (expiry_time - now_utc).total_seconds()
+                # Ensure non-negative value
+                time_to_expire = max(0, time_to_expire)
+                
+                # Get certificate identifier for label
+                cert_id = self._get_certificate_identifier(cert, provider_cert.relation_id)
+                
+                # Emit metric with label
+                event.add_metrics(
+                    {"time_to_expire_seconds": time_to_expire},
+                    labels={"certificate": cert_id}
+                )
+
+    def _get_certificate_identifier(self, certificate: Certificate, relation_id: int) -> str:
+        """Get a stable identifier for a certificate to use as a metric label.
+
+        Args:
+            certificate: The certificate to identify
+            relation_id: The relation ID associated with the certificate
+
+        Returns:
+            A stable string identifier (CN or CN+relation_id or hash)
+        """
+        # Prefer using Common Name (CN)
+        if certificate.common_name:
+            # Include relation_id to disambiguate certificates with the same CN
+            return f"{certificate.common_name}_{relation_id}"
+        
+        # Fallback: use a stable hash of the certificate PEM (shortened)
+        cert_pem = str(certificate)
+        cert_hash = hashlib.sha256(cert_pem.encode()).hexdigest()[:16]
+        return f"cert_{cert_hash}_{relation_id}"
 
     def _is_ca_cert_active(self) -> bool:
         """Return whether the CA certificate is active by checking the secret expiry."""
