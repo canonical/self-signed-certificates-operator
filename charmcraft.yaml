@@ -156,6 +156,6 @@ charm-libs:
   - lib: certificate_transfer_interface.certificate_transfer
     version: "1.15"
   - lib: tempo_coordinator_k8s.charm_tracing
-    version: "0.11"
+    version: "0.12"
   - lib: tempo_coordinator_k8s.tracing
     version: "0.11"
