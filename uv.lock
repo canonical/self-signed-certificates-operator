@@ -1481,7 +1481,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "charmlibs-interfaces-tls-certificates", specifier = "~=1.6" },
+    { name = "charmlibs-interfaces-tls-certificates", specifier = "~=1.7" },
     { name = "jsonschema" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "ops", specifier = ">=3.5.2" },
