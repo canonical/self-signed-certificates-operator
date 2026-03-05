@@ -166,7 +166,11 @@ def wait_for_requirer_certificates(juju: jubilant.Juju, ca_common_name: str) -> 
     while time.time() - t0 < timeout:
         logger.info("Waiting for CA certificate with common name %s", ca_common_name)
         time.sleep(5)
-        action_output = run_get_certificate_action(juju)
+        try:
+            action_output = run_get_certificate_action(juju)
+        except jubilant.TaskError:
+            logger.info("Action failed (certificate not yet available), retrying...")
+            continue
         try:
             certificates = json.loads(action_output.get("certificates", ""))[0]
         except json.JSONDecodeError:
