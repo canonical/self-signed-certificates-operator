@@ -12,36 +12,12 @@ insert this certificate back into the relation data.
 
 This charm is useful when developing charms or when deploying charms in non-production environment.
 
-## Pre-requisites
+For more information, including guides, integrations, and configuration options, read the [Self-signed Certificates documentation](https://charmhub.io/self-signed-certificates).
 
-- Juju >= 3.0
+## Project & Community
 
-## Usage
+Self-signed Certificates Operator is an open source project that warmly welcomes community contributions, suggestions, fixes, and constructive feedback.
 
-To use the `self-signed-certificates` operator and provide certificates to your charm, your charm
-needs to support the `tls-certificates` interface.
-
-```shell
-juju deploy self-signed-certificates
-juju deploy <your charm>
-juju relate self-signed-certificates <your charm>
-```
-
-To obtain the CA certificate from this charm, your charm needs to support the
-`certificate_transfer` interface.
-
-```console
-juju relate self-signed-certificates:send-ca-cert <your charm>
-```
-
-To get the CA certificate run:
-
-```console
-juju run self-signed-certificates/0 get-ca-certificate
-```
-
-## Get the certificates issued by the charm
-
-```shell
-juju run self-signed-certificates/leader get-issued-certificates
-```
+- To contribute to the code Please see [CONTRIBUTING.md](CONTRIBUTING.md) and the [Juju SDK docs](https://juju.is/docs/sdk) for guidelines and best practices.
+- Raise software issues or feature requests in [GitHub](https://github.com/canonical/self-signed-certificates-operator/issues)
+- Meet the community and chat with us on [Matrix](https://matrix.to/#/#tls:ubuntu.com)
