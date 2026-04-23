@@ -5,9 +5,9 @@ requires-python = ">=3.10"
 
 dependencies = [
     "jsonschema",
-    "ops >=3.6.0",
+    "ops >=3.7.0",
     "opentelemetry-exporter-otlp-proto-http",
-    "pydantic==2.12.5",
+    "pydantic==2.13.3",
     "charmlibs-interfaces-tls-certificates~=1.8"
 ]
 
@@ -18,7 +18,7 @@ test = [
     "juju",
     "pytest",
     "ops[testing]",
-    "jubilant>=1.7.0",
+    "jubilant>=1.8.0",
 ]
 dev = [
     "codespell",
