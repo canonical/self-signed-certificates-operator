@@ -14,6 +14,7 @@ resource "juju_application" "self-signed-certificates" {
 
   config      = var.config
   constraints = var.constraints
+  resources   = var.resources
   units       = var.units
 }
 

@@ -31,6 +31,12 @@ variable "model_uuid" {
   default     = ""
 }
 
+variable "resources" {
+  description = "The charm's resources i.e., a resource revision number from CharmHub or a custom OCI image resource"
+  type        = map(string)
+  default     = {}
+}
+
 variable "revision" {
   description = "Revision number of the charm"
   type        = number
