@@ -34,6 +34,9 @@ def juju(request: pytest.FixtureRequest):
         if request.session.testsfailed:
             log = juju.debug_log(limit=1000)
             print(log, end="")
+            log_path = Path("juju-debug.log")
+            log_path.write_text(log)
+            print(f"Juju debug log written to {log_path.resolve()}")
 
 
 @pytest.mark.abort_on_fail
