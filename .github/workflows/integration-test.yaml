@@ -104,3 +104,11 @@ jobs:
         with:
           name: juju-crashdump
           path: juju-crashdump-*.tar.xz
+
+      - name: Archive juju debug log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: juju-debug-log-${{ strategy.job-index }}
+          path: juju-debug.log
+          if-no-files-found: ignore
