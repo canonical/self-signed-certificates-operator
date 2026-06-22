@@ -40,6 +40,7 @@ parts:
     source: .
     plugin: uv
     build-packages:
+      - git
       - libffi-dev
       - libssl-dev
       - pkg-config
@@ -48,7 +49,13 @@ parts:
       - rustup
     override-build: |
       rustup default stable
+      uv export --frozen --no-dev --no-emit-package charmlibs-interfaces-tls-certificates -o requirements.txt
       craftctl default
+      VIRTUAL_ENV= UV_PROJECT_ENVIRONMENT= uv pip install \
+        --target "${CRAFT_PART_INSTALL}/venv" \
+        --no-deps \
+        --python "$(command -v python3)" \
+        "charmlibs-interfaces-tls-certificates @ git+https://github.com/saltiyazan/charmlibs.git@TLSENG-1115#subdirectory=interfaces/tls-certificates"
 
 provides:
   certificates:

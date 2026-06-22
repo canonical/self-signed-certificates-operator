@@ -12,6 +12,7 @@ from charmlibs.interfaces.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
     PrivateKey,
+    ProviderCapabilities,
     ProviderCertificate,
     RequirerCertificateRequest,
     TLSCertificatesProvidesV4,
@@ -50,7 +51,17 @@ class SelfSignedCertificatesCharm(CharmBase):
     def __init__(self, *args: Any):
         """Observe config change and certificate request events."""
         super().__init__(*args)
-        self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
+        self.tls_certificates = TLSCertificatesProvidesV4(
+            self,
+            "certificates",
+            provider_capabilities=ProviderCapabilities(
+                supports_ip_sans=True,
+                supports_wildcard_dns=True,
+                supports_subdomain=True,
+                supports_ca_certificates=True,
+                provider_type="self-signed",
+            ),
+        )
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
             self.tracing, CA_CERT_PATH
