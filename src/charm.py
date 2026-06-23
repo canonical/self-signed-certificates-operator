@@ -54,13 +54,7 @@ class SelfSignedCertificatesCharm(CharmBase):
         self.tls_certificates = TLSCertificatesProvidesV4(
             self,
             "certificates",
-            provider_capabilities=ProviderCapabilities(
-                supports_ip_sans=True,
-                supports_wildcard_dns=True,
-                supports_subdomain=True,
-                supports_ca_certificates=True,
-                provider_type="self-signed",
-            ),
+            provider_capabilities=self._get_provider_capabilities(),
         )
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
@@ -142,6 +136,44 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not value or not isinstance(value, int):
             return None
         return value
+
+    @property
+    def _config_supports_ip_sans(self) -> bool:
+        """Return whether the charm supports IP SANs from config."""
+        value = self.model.config.get("supports-ip-sans")
+        return bool(value) if value is not None else True
+
+    @property
+    def _config_supports_wildcard_dns(self) -> bool:
+        """Return whether the charm supports wildcard DNS from config."""
+        value = self.model.config.get("supports-wildcard-dns")
+        return bool(value) if value is not None else True
+
+    @property
+    def _config_supports_subdomain(self) -> bool:
+        """Return whether the charm supports subdomains from config."""
+        value = self.model.config.get("supports-subdomain")
+        return bool(value) if value is not None else True
+
+    @property
+    def _config_supports_ca_certificates(self) -> bool:
+        """Return whether the charm supports CA certificates from config."""
+        value = self.model.config.get("supports-ca-certificates")
+        return bool(value) if value is not None else True
+
+    def _get_provider_capabilities(self) -> ProviderCapabilities:
+        """Build provider capabilities from current configuration.
+
+        Returns:
+            ProviderCapabilities: Capabilities object reflecting current config.
+        """
+        return ProviderCapabilities(
+            supports_ip_sans=self._config_supports_ip_sans,
+            supports_wildcard_dns=self._config_supports_wildcard_dns,
+            supports_subdomain=self._config_supports_subdomain,
+            supports_ca_certificates=self._config_supports_ca_certificates,
+            provider_type="self-signed",
+        )
 
     @property
     def _ca_certificate_renewal_threshold(self) -> timedelta | None:
@@ -427,12 +459,63 @@ class SelfSignedCertificatesCharm(CharmBase):
         requests = self.tls_certificates.get_outstanding_certificate_requests()
         if self._config_certificate_limit and self._config_certificate_limit > -1:
             requests = self._limit_requests(requests)
+        # Filter requests based on configured capabilities
+        requests = self._filter_requests_by_capabilities(requests)
         for request in requests:
             self._generate_self_signed_certificate(
                 csr=request.certificate_signing_request,
                 is_ca=request.is_ca,
                 relation_id=request.relation_id,
             )
+
+    def _filter_requests_by_capabilities(
+        self, requests: list[RequirerCertificateRequest] | Iterator[RequirerCertificateRequest]
+    ) -> Iterator[RequirerCertificateRequest]:
+        """Filter certificate requests based on configured capabilities.
+
+        Args:
+            requests: List or iterator of certificate requests to filter.
+
+        Yields:
+            RequirerCertificateRequest: Requests that match configured capabilities.
+        """
+        for request in requests:
+            csr = request.certificate_signing_request
+            # Check IP SANs capability
+            if not self._config_supports_ip_sans and csr.sans_ip:
+                logger.warning(
+                    "Rejecting CSR from relation %d: IP SANs not supported by charm config",
+                    request.relation_id,
+                )
+                continue
+            # Check wildcard DNS capability
+            if not self._config_supports_wildcard_dns:
+                # Check both common_name and sans_dns for wildcard
+                all_dns = {csr.common_name} | csr.sans_dns
+                if any(san.startswith("*.") for san in all_dns):
+                    logger.warning(
+                        "Rejecting CSR from relation %d: Wildcard DNS not supported by config",
+                        request.relation_id,
+                    )
+                    continue
+            # Check subdomain capability
+            if not self._config_supports_subdomain:
+                # Check both common_name and sans_dns for nested subdomains (3+ dots)
+                all_dns = {csr.common_name} | csr.sans_dns
+                if any(san.count(".") >= 3 for san in all_dns):
+                    logger.warning(
+                        "Rejecting CSR from relation %d: Subdomains not supported by config",
+                        request.relation_id,
+                    )
+                    continue
+            # Check CA certificate capability
+            if not self._config_supports_ca_certificates and request.is_ca:
+                logger.warning(
+                    "Rejecting CSR from relation %d: CA certificates not supported by config",
+                    request.relation_id,
+                )
+                continue
+            yield request
 
     def _limit_requests(
         self, requests: list[RequirerCertificateRequest]

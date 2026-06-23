@@ -148,6 +148,30 @@ config:
       description: >
         Maximum number of certificates that can be issued to a single requirer.
         Use -1 for allowing an unlimited number of certificates.
+    supports-ip-sans:
+      type: boolean
+      default: true
+      description: >
+        Whether the charm supports Subject Alternative Names (SANs) for IP addresses.
+        CSRs requesting IP SANs will be rejected if this is set to false.
+    supports-wildcard-dns:
+      type: boolean
+      default: true
+      description: >
+        Whether the charm supports wildcard DNS names in certificates.
+        CSRs requesting wildcard DNS names will be rejected if this is set to false.
+    supports-subdomain:
+      type: boolean
+      default: true
+      description: >
+        Whether the charm supports subdomain certificates.
+        CSRs requesting subdomains will be rejected if this is set to false.
+    supports-ca-certificates:
+      type: boolean
+      default: true
+      description: >
+        Whether the charm supports issuing CA certificates.
+        CSRs requesting CA certificates will be rejected if this is set to false.
 
 actions:
   get-ca-certificate:
