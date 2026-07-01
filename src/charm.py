@@ -15,6 +15,7 @@ from charmlibs.interfaces.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
     PrivateKey,
+    ProviderCapabilities,
     ProviderCertificate,
     RequirerCertificateRequest,
     TLSCertificatesProvidesV4,
@@ -50,7 +51,11 @@ class SelfSignedCertificatesCharm(CharmBase):
     def __init__(self, *args: Any):
         """Observe config change and certificate request events."""
         super().__init__(*args)
-        self.tls_certificates = TLSCertificatesProvidesV4(self, "certificates")
+        self.tls_certificates = TLSCertificatesProvidesV4(
+            self,
+            "certificates",
+            provider_capabilities=self._provider_capabilities,
+        )
         self.tracing = TracingEndpointRequirer(self, protocols=["otlp_http"])
         self._tracing_endpoint, self._tracing_server_cert = charm_tracing_config(
             self.tracing, CA_CERT_PATH
@@ -131,6 +136,26 @@ class SelfSignedCertificatesCharm(CharmBase):
         if not value or not isinstance(value, int):
             return None
         return value
+
+    @property
+    def _provider_capabilities(self) -> ProviderCapabilities:
+        """Capabilities advertised to requirers over the ``certificates`` relation.
+
+        This charm is an unrestricted self-signed CA: it signs whatever CSR it is given,
+        so every capability is advertised as supported.
+
+        This property is the single source of truth for what the charm claims to
+        support. If SSC ever grows config that rejects certain CSRs (e.g. disallowing
+        IP SANs or CA certificate issuance), flip the relevant flag here to ``False``
+        AND add matching request filtering in ``_process_outstanding_certificate_requests``
+        so the advertisement keeps reflecting reality.
+        """
+        return ProviderCapabilities(
+            supports_ip_sans=True,
+            supports_wildcard_dns=True,
+            supports_subdomain=True,
+            supports_ca_certificates=True,
+        )
 
     @property
     def _ca_certificate_renewal_threshold(self) -> timedelta | None:
