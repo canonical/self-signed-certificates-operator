@@ -8,6 +8,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Iterator, Optional, cast
 
+from charmlibs.interfaces.certificate_transfer import (
+    CertificateTransferProvides,
+)
 from charmlibs.interfaces.tls_certificates import (
     Certificate,
     CertificateSigningRequest,
@@ -18,9 +21,6 @@ from charmlibs.interfaces.tls_certificates import (
     generate_ca,
     generate_certificate,
     generate_private_key,
-)
-from charms.certificate_transfer_interface.v1.certificate_transfer import (
-    CertificateTransferProvides,
 )
 from charms.tempo_coordinator_k8s.v0.charm_tracing import trace_charm
 from charms.tempo_coordinator_k8s.v0.tracing import TracingEndpointRequirer, charm_tracing_config
