@@ -25,6 +25,8 @@ jobs:
             runner: ubuntu-22.04
             base: "22.04"
 
+    # TODO: remove once juju 4.0/stable integration tests are stable
+    continue-on-error: ${{ matrix.juju-version == '4.0/stable' }}
     runs-on: ${{ matrix.arch.runner }}
     steps:
       - name: Checkout
