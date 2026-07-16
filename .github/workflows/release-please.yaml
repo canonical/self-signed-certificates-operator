@@ -1,0 +1,16 @@
+name: Release Please
+run-name: release ${{ github.ref_name }}
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: canonical/identity-credentials-workflows/.github/workflows/release-please.yaml@v3.1.2
+    secrets:
+      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
