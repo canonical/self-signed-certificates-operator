@@ -24,6 +24,11 @@ from constants import (
 )
 
 
+def _now_matching_tzinfo(reference: datetime) -> datetime:
+    """Return the current time using the same tzinfo as the given reference datetime."""
+    return datetime.now(reference.tzinfo)
+
+
 class TestCharmConfigure:
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -92,7 +97,9 @@ class TestCharmConfigure:
         ca_certificates_secret_expiry = ca_certificates_secret.expire
         assert ca_certificates_secret_expiry
         expected_delta = timedelta(days=root_ca_validity - certificate_validity)
-        actual_delta = ca_certificates_secret_expiry - datetime.now()
+        actual_delta = ca_certificates_secret_expiry - _now_matching_tzinfo(
+            ca_certificates_secret_expiry
+        )
         tolerance = timedelta(seconds=1)
         assert abs(actual_delta - expected_delta) <= tolerance, (
             f"Expected: {expected_delta}, but got: {actual_delta}"
@@ -239,10 +246,10 @@ class TestCharmConfigure:
         assert expiring_secret_content["private-key"] == str(initial_ca_private_key)
         assert expiring_ca_certificates_secret.expire
         tolerance = timedelta(seconds=1)
-        assert (
-            abs(expiring_ca_certificates_secret.expire - (datetime.now() + timedelta(minutes=1)))
-            <= tolerance
+        expected_expiry = _now_matching_tzinfo(expiring_ca_certificates_secret.expire) + timedelta(
+            minutes=1
         )
+        assert abs(expiring_ca_certificates_secret.expire - expected_expiry) <= tolerance
 
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.set_relation_certificate")
     @patch(f"{TLS_LIB_PATH}.TLSCertificatesProvidesV4.get_outstanding_certificate_requests")
