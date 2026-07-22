@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: canonical/identity-credentials-workflows/.github/actions/prepare@v3.1.2
 
+      - name: Install toolchains
+        run: just setup
+        env:
+          TOOLCHAINS: python
+
       - name: Install charmcraft
         run: sudo snap install charmcraft --classic
 
