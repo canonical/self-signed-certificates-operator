@@ -20,13 +20,13 @@ resource "juju_application" "self-signed-certificates" {
 resource "juju_offer" "send_ca_cert" {
   name             = "send-ca-cert"
   model_uuid       = var.model_uuid
-  application_name = var.app_name
+  application_name = juju_application.self-signed-certificates.name
   endpoints        = ["send-ca-cert"]
 }
 
 resource "juju_offer" "certificates" {
   name             = "certificates"
   model_uuid       = var.model_uuid
-  application_name = var.app_name
+  application_name = juju_application.self-signed-certificates.name
   endpoints        = ["certificates"]
 }
