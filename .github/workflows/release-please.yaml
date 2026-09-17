@@ -11,6 +11,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: canonical/identity-credentials-workflows/.github/workflows/release-please.yaml@v3.1.4
+    uses: canonical/identity-credentials-workflows/.github/workflows/release-please.yaml@v3.1.5
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
