@@ -20,9 +20,9 @@ variable "config" {
 }
 
 variable "constraints" {
-  description = "Juju constraints to apply for this application."
+  description = "Juju constraints to apply for this application. null uses the model's constraints, and Juju falls back to amd64 when the model sets no arch."
   type        = string
-  default     = "arch=amd64"
+  default     = null
 }
 
 variable "model_uuid" {

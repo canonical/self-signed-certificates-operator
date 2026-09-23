@@ -37,6 +37,8 @@ module "self-signed-certificates" {
 
 The model UUID can easily be obtained with the [juju_model data source](https://registry.terraform.io/providers/juju/juju/latest/docs/data-sources/model). 
 
+By default, the application uses the model's constraints. To deploy on arm64, set `arch=arm64` on the model or pass `constraints = "arch=arm64"` to the module.
+
 Then, create the integrations, for instance:
 
 ```text
