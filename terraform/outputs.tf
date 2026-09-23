@@ -20,8 +20,6 @@ output "provides" {
 }
 
 output "offers" {
-  value = {
-    send-ca-cert = juju_offer.send_ca_cert
-    certificates = juju_offer.certificates
-  }
+  description = "Offers created from offered_endpoints, keyed by endpoint."
+  value       = { for endpoint, offer in juju_offer.this : endpoint => offer.url }
 }

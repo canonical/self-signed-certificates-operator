@@ -17,16 +17,10 @@ resource "juju_application" "self-signed-certificates" {
   units       = var.units
 }
 
-resource "juju_offer" "send_ca_cert" {
-  name             = "send-ca-cert"
+resource "juju_offer" "this" {
+  for_each         = var.offered_endpoints
+  name             = "${var.app_name}-${each.value}"
   model_uuid       = var.model_uuid
   application_name = juju_application.self-signed-certificates.name
-  endpoints        = ["send-ca-cert"]
-}
-
-resource "juju_offer" "certificates" {
-  name             = "certificates"
-  model_uuid       = var.model_uuid
-  application_name = juju_application.self-signed-certificates.name
-  endpoints        = ["certificates"]
+  endpoints        = [each.value]
 }
