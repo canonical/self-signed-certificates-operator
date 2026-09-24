@@ -11,13 +11,12 @@ output "application" {
   value       = juju_application.self-signed-certificates
 }
 
-output "requires" {
-  description = "Map of the endpoints the charm requires, keyed by endpoint name."
+output "offers" {
+  description = "Offers created from offered_endpoints, keyed by endpoint. Each value is { kind = \"offer\", url }."
   value = {
-    tracing = {
-      kind     = "endpoint"
-      name     = juju_application.self-signed-certificates.name
-      endpoint = "tracing"
+    for endpoint, offer in juju_offer.this : endpoint => {
+      kind = "offer"
+      url  = offer.url
     }
   }
 }
@@ -38,12 +37,13 @@ output "provides" {
   }
 }
 
-output "offers" {
-  description = "Offers created from offered_endpoints, keyed by endpoint. Each value is { kind = \"offer\", url }."
+output "requires" {
+  description = "Map of the endpoints the charm requires, keyed by endpoint name."
   value = {
-    for endpoint, offer in juju_offer.this : endpoint => {
-      kind = "offer"
-      url  = offer.url
+    tracing = {
+      kind     = "endpoint"
+      name     = juju_application.self-signed-certificates.name
+      endpoint = "tracing"
     }
   }
 }
