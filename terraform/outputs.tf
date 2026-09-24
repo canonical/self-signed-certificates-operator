@@ -6,6 +6,11 @@ output "app_name" {
   value       = juju_application.self-signed-certificates.name
 }
 
+output "application" {
+  description = "The deployed Juju application."
+  value       = juju_application.self-signed-certificates
+}
+
 output "requires" {
   value = {
     tracing = "tracing"
