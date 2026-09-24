@@ -59,6 +59,38 @@ resource "juju_integration" "certificates-endpoint-integration" {
 
 The complete list of available integrations can be found [here][self-signed-certificates-integrations].
 
+## Offers
+
+By default, the module creates no Juju offers. To expose endpoints to other models, list them in `offered_endpoints`. Accepted values are `certificates` and `send-ca-cert`.
+
+Each offer is named `<app_name>-<endpoint>`, so several instances of the module can offer the same endpoint in one model as long as their `app_name` differs. The `offers` output maps each offered endpoint to `{ kind = "offer", url }`.
+
+For example, to offer the `certificates` endpoint:
+
+```text
+module "self-signed-certificates" {
+  source = "git::https://github.com/canonical/self-signed-certificates-operator//terraform?ref=<COMMIT_HASH>"
+
+  model_uuid        = data.juju_model.my-model.uuid
+  offered_endpoints = ["certificates"]
+}
+
+resource "juju_integration" "remote-certificates" {
+  model_uuid = var.consumer_model_uuid
+
+  application {
+    name     = module.some-app.app_name
+    endpoint = module.some-app.certificates_endpoint
+  }
+
+  application {
+    offer_url = module.self-signed-certificates.offers["certificates"].url
+  }
+}
+```
+
+This creates an offer named `self-signed-certificates-certificates`.
+
 [Terraform]: https://www.terraform.io/
 [Terraform Juju provider]: https://registry.terraform.io/providers/juju/juju/latest
 [Juju]: https://juju.is

@@ -31,6 +31,17 @@ variable "model_uuid" {
   default     = ""
 }
 
+variable "offered_endpoints" {
+  description = "Endpoints to expose as Juju offers. Each offer is named <app_name>-<endpoint>."
+  type        = set(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for e in var.offered_endpoints : contains(["certificates", "send-ca-cert"], e)])
+    error_message = "offered_endpoints accepts only: certificates, send-ca-cert."
+  }
+}
+
 variable "revision" {
   description = "Revision number of the charm"
   type        = number
