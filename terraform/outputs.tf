@@ -20,6 +20,11 @@ output "provides" {
 }
 
 output "offers" {
-  description = "Offers created from offered_endpoints, keyed by endpoint."
-  value       = { for endpoint, offer in juju_offer.this : endpoint => offer.url }
+  description = "Offers created from offered_endpoints, keyed by endpoint. Each value is { kind = \"offer\", url }."
+  value = {
+    for endpoint, offer in juju_offer.this : endpoint => {
+      kind = "offer"
+      url  = offer.url
+    }
+  }
 }

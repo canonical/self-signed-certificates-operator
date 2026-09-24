@@ -63,7 +63,7 @@ The complete list of available integrations can be found [here][self-signed-cert
 
 By default, the module creates no Juju offers. To expose endpoints to other models, list them in `offered_endpoints`. Accepted values are `certificates` and `send-ca-cert`.
 
-Each offer is named `<app_name>-<endpoint>`, so several instances of the module can offer the same endpoint in one model as long as their `app_name` differs. The `offers` output maps each offered endpoint to its offer URL.
+Each offer is named `<app_name>-<endpoint>`, so several instances of the module can offer the same endpoint in one model as long as their `app_name` differs. The `offers` output maps each offered endpoint to `{ kind = "offer", url }`.
 
 For example, to offer the `certificates` endpoint:
 
@@ -84,7 +84,7 @@ resource "juju_integration" "remote-certificates" {
   }
 
   application {
-    offer_url = module.self-signed-certificates.offers["certificates"]
+    offer_url = module.self-signed-certificates.offers["certificates"].url
   }
 }
 ```
