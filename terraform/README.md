@@ -10,9 +10,17 @@ The root module is not intended to be deployed in separation (it is possible tho
 
 - **main.tf** - Defines the Juju application to be deployed.
 - **variables.tf** - Allows customization of the deployment. Except for exposing the deployment options (Juju model UUID, channel or application name) also models the charm configuration.
-- **output.tf** - Responsible for integrating the module with other Terraform modules, primarily by defining potential integration endpoints (charm integrations), but also by exposing the application name.
+- **outputs.tf** - Responsible for integrating the module with other Terraform modules, primarily by defining potential integration endpoints (charm integrations), but also by exposing the application.
 - **terraform.tf** - Defines the required Terraform version and providers.
-- **providers.tf** - Left empty on purpose. The calling module supplies the `juju` provider configuration.
+- **providers.tf** - Holds no provider block. The calling module supplies the `juju` provider configuration.
+
+## Outputs
+
+- **app_name** - Name of the deployed application.
+- **application** - The deployed `juju_application` resource. Read its attributes directly, for example `module.self-signed-certificates.application.name`.
+- **provides** - Map of the endpoints the charm provides, keyed by endpoint name: `certificates` and `send-ca-cert`. Each entry is an object with `kind = "endpoint"`, `name` set to the application name, and `endpoint` set to the endpoint name.
+- **requires** - Map of the endpoints the charm requires, keyed by endpoint name: `tracing`. Entries have the same shape as in `provides`.
+- **offers** - Map of the offers the module creates.
 
 ## Pre-requisites
 
