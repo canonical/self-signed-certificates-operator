@@ -49,8 +49,8 @@ resource "juju_integration" "certificates-endpoint-integration" {
   }
 
   application {
-    name     = module.self-signed-certificates.app_name
-    endpoint = module.self-signed-certificates.provides.certificates
+    name     = module.self-signed-certificates.provides.certificates.name
+    endpoint = module.self-signed-certificates.provides.certificates.endpoint
   }
 }
 ```
