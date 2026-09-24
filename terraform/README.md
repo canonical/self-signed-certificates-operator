@@ -11,7 +11,7 @@ The root module is not intended to be deployed in separation (it is possible tho
 - **main.tf** - Defines the Juju application to be deployed.
 - **variables.tf** - Allows customization of the deployment. Except for exposing the deployment options (Juju model UUID, channel or application name) also models the charm configuration.
 - **output.tf** - Responsible for integrating the module with other Terraform modules, primarily by defining potential integration endpoints (charm integrations), but also by exposing the application name.
-- **versions.tf** - Defines the Terraform provider.
+- **terraform.tf** - Defines the required Terraform version and providers.
 
 ## Pre-requisites
 
