@@ -7,6 +7,12 @@ variable "app_name" {
   default     = "self-signed-certificates"
 }
 
+variable "base" {
+  description = "The operating system on which to deploy"
+  type        = string
+  default     = "ubuntu@24.04"
+}
+
 variable "channel" {
   description = "The channel to use when deploying a charm."
   type        = string
@@ -35,12 +41,6 @@ variable "revision" {
   description = "Revision number of the charm"
   type        = number
   default     = null
-}
-
-variable "base" {
-  description = "The operating system on which to deploy"
-  type        = string
-  default     = "ubuntu@24.04"
 }
 
 variable "units" {

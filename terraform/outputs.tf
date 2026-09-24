@@ -11,14 +11,10 @@ output "application" {
   value       = juju_application.self-signed-certificates
 }
 
-output "requires" {
-  description = "Map of the endpoints the charm requires, keyed by endpoint name."
+output "offers" {
   value = {
-    tracing = {
-      kind     = "endpoint"
-      name     = juju_application.self-signed-certificates.name
-      endpoint = "tracing"
-    }
+    send-ca-cert = juju_offer.send_ca_cert
+    certificates = juju_offer.certificates
   }
 }
 
@@ -38,9 +34,13 @@ output "provides" {
   }
 }
 
-output "offers" {
+output "requires" {
+  description = "Map of the endpoints the charm requires, keyed by endpoint name."
   value = {
-    send-ca-cert = juju_offer.send_ca_cert
-    certificates = juju_offer.certificates
+    tracing = {
+      kind     = "endpoint"
+      name     = juju_application.self-signed-certificates.name
+      endpoint = "tracing"
+    }
   }
 }
