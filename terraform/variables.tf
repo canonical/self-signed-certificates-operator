@@ -28,7 +28,7 @@ variable "constraints" {
 variable "model_uuid" {
   description = "Reference to a `juju_model`."
   type        = string
-  default     = ""
+  nullable    = false
 }
 
 variable "revision" {
