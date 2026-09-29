@@ -22,6 +22,14 @@ The root module is not intended to be deployed in separation (it is possible tho
 - **requires** - Map of the endpoints the charm requires, keyed by endpoint name: `tracing`. Entries have the same shape as in `provides`.
 - **offers** - Map of the offers the module creates.
 
+## Breaking changes
+
+The module now follows the CC008 charm Terraform standard, which changes its interface:
+
+- The `provides` and `requires` outputs now return endpoint objects instead of endpoint-name strings. Replace `module.self-signed-certificates.provides.certificates` with `module.self-signed-certificates.provides.certificates.endpoint`.
+- `model_uuid` is now required and no longer defaults to `""`.
+- The module requires Terraform >= 1.5. Older versions have reached end of life.
+
 ## Pre-requisites
 
 The following tools needs to be installed and should be running in the environment. Please [set up your environment][set-up-environment] before deployment.
