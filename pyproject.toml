@@ -7,9 +7,9 @@ dependencies = [
     "charmlibs-interfaces-certificate-transfer>=1.0.0",
     "charmlibs-interfaces-tls-certificates~=1.12",
     "jsonschema",
-    "ops >=3.8.2",
+    "ops >=3.9.0",
     "opentelemetry-exporter-otlp-proto-http",
-    "pydantic==2.13.5",
+    "pydantic==2.14.0",
 ]
 
 [dependency-groups]
