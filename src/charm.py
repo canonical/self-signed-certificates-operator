@@ -79,6 +79,10 @@ class SelfSignedCertificatesCharm(CharmBase):
             self.on[SEND_CA_CERT_REL_NAME].relation_joined,
             self._configure,
         )
+        self.framework.observe(
+            self.on[SEND_CA_CERT_REL_NAME].relation_changed,
+            self._configure,
+        )
         self.framework.observe(self.on.rotate_private_key_action, self._on_rotate_private_key)
 
     def _on_collect_unit_status(self, event: CollectStatusEvent):

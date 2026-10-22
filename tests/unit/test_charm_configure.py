@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 import json
+from dataclasses import replace
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, call, mock_open, patch
 
@@ -562,3 +563,64 @@ class TestCharmConfigure:
         assert another_relation_certificates["ca"] == json.dumps(str(provider_ca))
         assert another_relation_certificates["certificate"] == json.dumps(str(provider_ca))
         assert another_relation_certificates["chain"] == json.dumps([str(provider_ca)])
+
+    @patch("charm.generate_ca")
+    def test_given_late_v1_data_when_relation_changed_then_ca_is_republished(
+        self,
+        mock_generate_ca: MagicMock,
+    ):
+        relation = scenario.Relation(
+            endpoint="send-ca-cert",
+            interface="certificate_transfer",
+        )
+        provider_private_key = generate_private_key()
+        provider_ca = generate_ca(
+            private_key=provider_private_key,
+            common_name="example.com",
+            validity=timedelta(days=200),
+        )
+        secret = scenario.Secret(
+            {
+                "ca-certificate": str(provider_ca),
+                "private-key": str(provider_private_key),
+            },
+            label=CA_CERTIFICATES_SECRET_LABEL,
+            owner="app",
+            expire=datetime.now() + timedelta(days=100),
+        )
+        state_in = scenario.State(
+            relations={relation},
+            secrets={secret},
+            leader=True,
+            config={
+                "ca-common-name": "example.com",
+                "certificate-validity": "100",
+                "root-ca-validity": "200",
+            },
+        )
+
+        state_after_join = self.ctx.run(
+            self.ctx.on.relation_joined(relation, remote_unit=0),
+            state=state_in,
+        )
+        relation_with_v1_data = replace(
+            state_after_join.get_relation(relation.id),
+            remote_app_data={"version": "1"},
+        )
+        state_with_v1_data = replace(
+            state_after_join,
+            relations={relation_with_v1_data},
+        )
+        state_out = self.ctx.run(
+            self.ctx.on.relation_changed(relation_with_v1_data, remote_unit=0),
+            state=state_with_v1_data,
+        )
+
+        assert state_out.get_relation(relation.id).local_app_data["certificates"] == json.dumps(
+            [str(provider_ca)]
+        )
+        legacy_data = state_out.get_relation(relation.id).local_unit_data
+        assert legacy_data["ca"] == json.dumps(str(provider_ca))
+        assert legacy_data["certificate"] == json.dumps(str(provider_ca))
+        assert legacy_data["chain"] == json.dumps([str(provider_ca)])
+        mock_generate_ca.assert_not_called()
