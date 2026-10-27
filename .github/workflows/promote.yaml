@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-    uses: canonical/identity-credentials-workflows/.github/workflows/charm-secscan.yaml@v3.1.5
+    uses: canonical/identity-credentials-workflows/.github/workflows/charm-secscan.yaml@v3.1.8
     with:
       charm: self-signed-certificates
       track: "1"
