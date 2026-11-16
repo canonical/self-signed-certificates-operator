@@ -48,6 +48,8 @@ jobs:
 
   promote:
     name: Promote Charm
+    permissions:
+      contents: write
     needs:
       - scan
     runs-on: ubuntu-26.04
