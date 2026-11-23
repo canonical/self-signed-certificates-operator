@@ -19,6 +19,9 @@ jobs:
         juju-version: ["3.6/stable", "4.0/stable"]
         arch:
           - arch: amd64
+            runner: ubuntu-26.04
+            base: "26.04"
+          - arch: amd64
             runner: ubuntu-24.04
             base: "24.04"
           - arch: amd64
