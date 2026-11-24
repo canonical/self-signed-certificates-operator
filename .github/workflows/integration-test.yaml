@@ -19,6 +19,9 @@ jobs:
         juju-version: ["3.6/stable", "4.0/stable"]
         arch:
           - arch: amd64
+            runner: ubuntu-26.04
+            base: "26.04"
+          - arch: amd64
             runner: ubuntu-24.04
             base: "24.04"
           - arch: amd64
@@ -67,7 +70,7 @@ jobs:
 
       - name: Install and setup Microk8s
         run: |
-          sudo snap install microk8s --channel=1.32/stable --classic
+          sudo snap install microk8s --channel=1.35/stable --classic
           sudo microk8s enable dns storage rbac
 
       - name: Wait for Microk8s to be ready

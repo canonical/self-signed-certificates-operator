@@ -22,6 +22,7 @@ on:
         options:
           - "24.04"
           - "22.04"
+          - "26.04"
 
 env:
   PROMOTE_FROM: ${{ inputs.promotion == 'edge -> beta' && 'edge' || inputs.promotion == 'beta -> candidate' && 'beta' || inputs.promotion == 'candidate -> stable' && 'candidate' || '' }}
